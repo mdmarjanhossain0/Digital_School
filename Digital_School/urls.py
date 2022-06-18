@@ -23,4 +23,5 @@ urlpatterns = [
 
 
     path('api/account/', include('account.api.urls', 'account_api')),
+    path("api/academic/", include("academic.api.urls", "academic"))
 ]

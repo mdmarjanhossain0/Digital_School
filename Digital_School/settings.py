@@ -33,7 +33,8 @@ INSTALLED_APPS = [
 
 
 
-    'account'
+    'account',
+    'academic'
 ]
 
 
@@ -43,7 +44,6 @@ TOKEN_EXPIRED_AFTER_SECONDS = 24*60*60
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':[
         'rest_framework.authentication.TokenAuthentication',
-        # 'account.api.authentication_utils.ExpiringTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES':[

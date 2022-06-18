@@ -131,6 +131,8 @@ class Student(models.Model):
 	balance                     = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 	batch                       = models.ForeignKey(Batch, null=True, blank=True, on_delete=models.SET_NULL)
 	address                     = models.CharField(max_length=15, null=True, blank=True)
+	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
+	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
 
 
 

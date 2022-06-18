@@ -2,10 +2,32 @@ from django.urls import path
 from rest_framework.authtoken.views import obtain_auth_token
 
 from account.api.views import(
+	delete_staff_view,
+	delete_student_view,
+	delete_teacher_view,
 	registration_organization_view,
 	registration_staff_view,
 	registration_student_view,
-	registration_teacher_view
+	registration_teacher_view,
+
+	update_organization_view,
+	update_staff_view,
+	update_student_view,
+	update_teacher_view,
+
+
+
+	ApiStaffListView,
+	ApiStudentListView,
+	ApiTeacherListView,
+
+
+
+
+
+	delete_staff_view,
+	delete_student_view,
+	delete_teacher_view
 	) 
 
 app_name='account'
@@ -15,4 +37,30 @@ urlpatterns = [
 	path("register/staff", registration_staff_view, name="register_staff"),
 	path("register/student", registration_student_view, name="register_student"),
 	path("register/teacher", registration_teacher_view, name="register_teacher"),
+
+
+
+
+
+
+
+
+	path("organizer/update/<pk>", update_organization_view, name="register"),
+	path("staff/update/<pk>", update_staff_view, name="register"),
+	path("student/update/<pk>", update_student_view, name="register"),
+	path("teacher/update/<pk>", update_teacher_view, name="register"),
+
+
+
+
+
+
+	path("staff", ApiStaffListView.as_view(), name="register"),
+	path("student", ApiStudentListView.as_view(), name="register"),
+	path("teacher", ApiTeacherListView.as_view(), name="teacher"),
+
+	
+	path("staff/delete/<pk>", delete_staff_view, name="delete"),
+	path("student/delete/<pk>", delete_student_view, name="delete"),
+	path("teacher/delete/<pk>", delete_teacher_view, name="delete")
 ]
