@@ -99,8 +99,8 @@ class Organization(models.Model):
 
 
 	account                     = models.OneToOneField(Account, on_delete=models.CASCADE)
-	organization_name           = models.CharField(max_length=15, unique=True)
-	address                     = models.CharField(max_length=15, null=True, blank=True)
+	organization_name           = models.CharField(max_length=150, unique=True)
+	address                     = models.CharField(max_length=150, null=True, blank=True)
 
 
 
@@ -130,7 +130,8 @@ class Student(models.Model):
 	organization                = models.ForeignKey(Organization, on_delete=models.CASCADE)
 	balance                     = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 	batch                       = models.ForeignKey(Batch, null=True, blank=True, on_delete=models.SET_NULL)
-	address                     = models.CharField(max_length=15, null=True, blank=True)
+	address                     = models.CharField(max_length=150, null=True, blank=True)
+	group 						= models.CharField(max_length=100, null=True, blank=True)
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
 
@@ -144,7 +145,7 @@ class Teacher(models.Model):
 	account                     = models.OneToOneField(Account, on_delete=models.CASCADE)
 	organization                = models.ForeignKey(Organization, on_delete=models.CASCADE)
 	balance                     = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-	address                     = models.CharField(max_length=15, null=True, blank=True)
+	address                     = models.CharField(max_length=150, null=True, blank=True)
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
 

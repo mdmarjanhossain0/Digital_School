@@ -1,3 +1,18 @@
 from django.contrib import admin
 
-# Register your models here.
+from payment.models import (
+    StaffPayment,
+    StudentPayment,
+    TeacherPayment,
+    OtherPayment
+)
+
+
+
+
+
+
+admin.site.register(StaffPayment)
+admin.site.register(StudentPayment)
+admin.site.register(TeacherPayment)
+admin.site.register(OtherPayment)

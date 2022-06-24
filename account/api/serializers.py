@@ -209,7 +209,16 @@ class BatchSerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = Batch
-		fields = "__all__"
+		fields = [
+			"pk",
+			"name",
+			"organization",
+			"created_at",
+			"updated_at"
+		]
+		extra_kwargs = {
+				'organization': {'write_only': True},
+		}
 
 
 
@@ -504,6 +513,8 @@ class StudentSerializer(serializers.ModelSerializer):
 	mobile 						= serializers.SerializerMethodField("get_mobile")
 	username 					= serializers.SerializerMethodField("get_username")
 	profile_picture 			= serializers.SerializerMethodField("get_profile_picture")
+	is_active					= serializers.SerializerMethodField("get_is_activate")
+	batch_name 					= serializers.SerializerMethodField("get_batch_name")
 
 
 	class Meta:
@@ -517,6 +528,9 @@ class StudentSerializer(serializers.ModelSerializer):
 			'address',
 			'balance',
 			'batch',
+			"batch_name",
+			"is_active",
+			"group",
 			'created_at',
 			'updated_at'
 			]
@@ -536,6 +550,18 @@ class StudentSerializer(serializers.ModelSerializer):
 	def get_profile_picture(self, obj):
 		if obj.account.profile_picture:
 			return obj.account.profile_picture.url
+		else:
+			return None
+	
+	def get_is_activate(self, obj):
+		return obj.account.is_active
+
+	def get_batch_name(self, obj):
+		if obj.batch:
+			return obj.batch.name
+
+
+		
 		else:
 			return None
 

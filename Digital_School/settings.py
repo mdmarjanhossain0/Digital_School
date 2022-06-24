@@ -10,7 +10,7 @@ DEBUG = True
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -34,7 +34,8 @@ INSTALLED_APPS = [
 
 
     'account',
-    'academic'
+    'academic',
+    'payment'
 ]
 
 
@@ -50,7 +51,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-        "PAGE_SIZE": 50,
+        "PAGE_SIZE": 10,
     'DATETIME_FORMAT': "%d/%m/%Y %H:%M:%S",
 }
 

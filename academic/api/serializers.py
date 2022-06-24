@@ -1,4 +1,3 @@
-from dataclasses import field
 from rest_framework import serializers
 
 from account.models import (
@@ -31,7 +30,10 @@ class CourseSerializer(serializers.ModelSerializer):
 		fields = [
 			"pk",
 			"organization",
-			"name"
+			"name",
+			"fee",
+			"is_discount_available",
+			"is_availabe"
 		]
 
 		# read_only_fields = ("pk",)

@@ -33,6 +33,7 @@ from account.models import (
 )
 
 from account.api.serializers import (
+	BatchSerializer,
 	RegistrationOrganizationSerializer,
 	RegistrationStaffSerializer,
 	StaffSerializer,
@@ -52,6 +53,51 @@ from account.api.serializers import (
 
 
 
+
+
+class ObtainAuthTokenView(APIView):
+
+	authentication_classes = []
+	permission_classes = []
+
+	def post(self, request):
+		context = {}
+
+		mobile = request.POST.get('username')
+		print(mobile)
+		password = request.POST.get('password')
+		print(password)
+		account = authenticate(mobile=mobile, password=password)
+		organization = Organization.objects.get(account=account)
+		if account:
+			try:
+				token = Token.objects.get(user=account)
+			except Token.DoesNotExist:
+				token = Token.objects.create(user=account)
+			context['response'] = 'Successfully authenticated.'
+
+			context['email'] = account.email
+			context['username'] = account.username
+			context['pk'] = account.pk
+			context["mobile"] = account.mobile
+			context["is_admin"] = True
+			context["is_staff"] = True
+			context["is_teacher"] = account.is_teacher
+			context["is_student"] = True
+			context["balance"] = 0.00
+			context["created_at"] = account.date_joined
+			context["updated_at"] = account.last_login
+			
+
+			context["organization_name"] = organization.organization_name
+			context["address"] = organization.address
+			
+			context['token'] = token.key
+		else:
+			context['response'] = 'Error'
+			context['error_message'] = 'Invalid credentials'
+
+		return Response(context)
 
 @api_view(['POST', ])
 @permission_classes([])
@@ -92,6 +138,10 @@ def registration_organization_view(request):
 			data["is_admin"] = True
 			data["is_staff"] = True
 			data["is_teacher"] = account.is_teacher
+
+			data["balance"] = 0.00
+			data["created_at"] = account.date_joined
+			data["updated_at"] = account.last_login
 			
 
 			data["organization_name"] = serializer.data.get("organization_name", None)
@@ -144,6 +194,9 @@ def update_organization_view(request, pk):
 			data["is_admin"] = True
 			data["is_staff"] = True
 			data["is_teacher"] = account.is_teacher
+			data["balance"] = 0.00
+			data["created_at"] = account.date_joined
+			data["updated_at"] = account.last_login
 			
 
 			data["organization_name"] = serializer.data.get("organization_name", None)
@@ -198,6 +251,9 @@ def registration_staff_view(request):
 			data["is_admin"] = False
 			data["is_staff"] = True
 			data["is_teacher"] = account.is_teacher
+			data["balance"] = 0.00
+			data["created_at"] = account.date_joined
+			data["updated_at"] = account.last_login
 
 			data["address"] = serializer.data.get("address", None)
 			data["organization_name"] = organization.organization_name
@@ -255,6 +311,9 @@ def update_staff_view(request, pk):
 			data["is_admin"] = False
 			data["is_staff"] = True
 			data["is_teacher"] = account.is_teacher
+			data["balance"] = 0.00
+			data["created_at"] = account.date_joined
+			data["updated_at"] = account.last_login
 
 			data["address"] = serializer.data.get("address", None)
 			data["organization_name"] = organization.organization_name
@@ -308,6 +367,9 @@ def registration_student_view(request):
 			data["is_admin"] = False
 			data["is_staff"] = False
 			data["is_teacher"] = False
+			data["balance"] = 0.00
+			data["created_at"] = account.date_joined
+			data["updated_at"] = account.last_login
 
 			data["address"] = serializer.data.get("address", None)
 			data["organization_name"] = organization.organization_name
@@ -364,6 +426,9 @@ def update_student_view(request, pk):
 			data["is_admin"] = False
 			data["is_staff"] = False
 			data["is_teacher"] = False
+			data["balance"] = 0.00
+			data["created_at"] = account.date_joined
+			data["updated_at"] = account.last_login
 
 			data["address"] = serializer.data.get("address", None)
 			data["organization_name"] = organization.organization_name
@@ -403,7 +468,14 @@ def registration_teacher_view(request):
 			return Response(data)
 
 		context = {}
-		organization = Organization.objects.get(account=request.user)
+		if request.user.is_admin:
+			organization = Organization.objects.get(account=request.user)
+		elif request.user.is_staff:
+			organization = Staff.objects.get(account=request.user).organization
+		else:
+			data["response"] = "Error"
+			data["error_message"] = "Permission denied"
+			return Response(data=data, status=403)
 		context["organization"] = organization
 		serializer = RegisterTeacherSerializer(data=request.data, context=context)
 		
@@ -418,6 +490,9 @@ def registration_teacher_view(request):
 			data["is_admin"] = False
 			data["is_staff"] = False
 			data["is_teacher"] = True
+			data["balance"] = 0.00
+			data["created_at"] = account.date_joined
+			data["updated_at"] = account.last_login
 
 			data["address"] = serializer.data.get("address", None)
 			data["organization_name"] = organization.organization_name
@@ -474,6 +549,9 @@ def update_teacher_view(request, pk):
 			data["is_admin"] = False
 			data["is_staff"] = False
 			data["is_teacher"] = True
+			data["balance"] = 0.00
+			data["created_at"] = account.date_joined
+			data["updated_at"] = account.last_login
 
 			data["address"] = serializer.data.get("address", None)
 			data["organization_name"] = organization.organization_name
@@ -574,6 +652,29 @@ class ApiTeacherListView(ListAPIView):
 
 		return Teacher.objects.filter(organization=organization)
 
+class ApiBatchListView(ListAPIView):
+	serializer_class = BatchSerializer
+	authentication_classes = {TokenAuthentication}
+	permission_classes = {IsAuthenticated}
+	pagination_classes = PageNumberPagination
+	filter_backends = {SearchFilter, OrderingFilter, DjangoFilterBackend}
+	search_fields = {"name"}
+	filterset_fields =  {"name"}
+
+	def get_queryset(self):
+		user = self.request.user
+		if user.is_admin :
+			organization = Organization.objects.get(account=user)
+		elif user.is_staff:
+			organization = Staff.objects.get(account=user).organization
+		elif user.teacher:
+			organization = Teacher.objects.get(account=user).organization
+		else: 
+			organization = Student.objects.get(account=user).organization
+
+		return Batch.objects.filter(organization=organization)
+
+
 
 @api_view(['DELETE', ])
 @permission_classes([IsAuthenticated])
@@ -662,4 +763,120 @@ def delete_teacher_view(request, pk):
 		data["error_message"] = "Teacher not found"
 		return Response(data=data, status=404)
 
+@api_view(['GET', ])
+@permission_classes((IsAuthenticated, ))
+def staff_details_view(request, pk):
 
+	try:
+		account = Account.objects.get(pk=pk)
+		staff = Staff.objects.get(account=account)
+	except Account.DoesNotExist:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	if request.method == 'GET':
+		serializer = StaffSerializer(staff)
+		return Response(serializer.data)
+
+@api_view(['GET', ])
+@permission_classes((IsAuthenticated, ))
+def student_details_view(request, pk):
+
+	try:
+		account = Account.objects.get(pk=pk)
+		student = Student.objects.get(account=account)
+	except Account.DoesNotExist:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	if request.method == 'GET':
+		serializer = StudentSerializer(student)
+		return Response(serializer.data)
+
+
+
+@api_view(['GET', ])
+@permission_classes((IsAuthenticated, ))
+def teacher_details_view(request, pk):
+
+	try:
+		account = Account.objects.get(pk=pk)
+		teacher = Teacher.objects.get(account=account)
+	except Account.DoesNotExist:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	if request.method == 'GET':
+		serializer = TeacherSerializer(teacher)
+		return Response(serializer.data)
+
+
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated])
+def create_batch_view(request):
+
+	if request.method == 'POST':
+		data = {}
+		if request.user.is_admin:
+			organization = Organization.objects.get(account=request.user)
+		elif request.user.is_staff:
+			organization = Staff.objects.get(account=request.user).organization
+		else:
+			data["response"] = "Error"
+			data["error_message"] = "Permission denied"
+			return Response(data=data, status=403)
+
+		rdata = request.data.copy()
+		rdata["organization"] = organization.pk
+		print(rdata)
+		serializer = BatchSerializer(data=rdata)
+		
+		if serializer.is_valid():
+			account = serializer.save()
+			data = serializer.data
+			data['response'] = 'successfully updated.'
+			return Response(data)
+		else:
+			data = serializer.errors
+			print(serializer.errors)
+			return Response(data, status=400)
+
+
+
+
+
+@api_view(['PUT', ])
+@permission_classes([IsAuthenticated])
+def update_batch_view(request, pk):
+
+	if request.method == 'PUT':
+		data = {}
+		instance = Batch.objects.get(pk=pk)
+		serializer = BatchSerializer(data=request.data, instance=instance, partial=True)
+		
+		if serializer.is_valid():
+			account = serializer.save()
+			data = serializer.data
+			data['response'] = 'successfully updated.'
+			return Response(data)
+		else:
+			data = serializer.errors
+			return Response(data, status=400)
+
+
+	
+
+@api_view(['DELETE', ])
+@permission_classes([IsAuthenticated])
+def delete_batch_view(request, pk):
+
+	if request.method == 'DELETE':
+		data = {}
+		
+		try:
+			instance = Batch.objects.get(pk=pk)
+			instance.delete()
+			data["response"] = "Successfully deleted"
+			return Response(data=data)
+		except:
+			data["error_message"] = "Not found"
+			return Response(data, status=400)
+			
