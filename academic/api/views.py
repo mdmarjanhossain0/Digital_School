@@ -32,7 +32,8 @@ from academic.models import (
 from academic.api.serializers import (
 	CourseSerializer,
 	ExamSerializer,
-	ResultSerializer
+	ResultSerializer,
+	ExamListSerializer
 )
 
 
@@ -45,6 +46,10 @@ from account.models import (
 	Student,
 	Teacher
 )
+
+
+import csv
+import codecs
 
 
 
@@ -171,7 +176,7 @@ def create_exam_view(request):
 
 		if serializer.is_valid():
 			model = serializer.save()
-			data = serializer.data
+			data = ExamListSerializer(model).data
 			data["response"] = "Successfully created"
 			data["error_message"] = None
 
@@ -211,7 +216,7 @@ def update_exam_view(request, pk):
 
 		if serializer.is_valid():
 			model = serializer.save()
-			data = serializer.data
+			data = ExamListSerializer(model).data
 			data["response"] = "Successfully created"
 			data["error_message"] = None
 
@@ -228,7 +233,7 @@ def update_exam_view(request, pk):
 
 
 class ApiExamListView(ListAPIView):
-	serializer_class = ExamSerializer
+	serializer_class = ExamListSerializer
 	authentication_classes = {TokenAuthentication}
 	permission_classes = {IsAuthenticated}
 	pagination_classes = PageNumberPagination
@@ -269,18 +274,19 @@ def create_result_view(request):
 		rdata = request.data.copy()
 
 
-		course = rdata.get("course", None)
-		if course == None:
-			data["response"] = "Error"
-			data["error_message"] = "Course is required field"
-			return Response(data=data, status=400)
-		rdata["organization"] = organization.pk
+		for item in rdata:
+			course = item.get("course", None)
+			if course == None:
+				data["response"] = "Error"
+				data["error_message"] = "Course is required field"
+				return Response(data=data, status=400)
+			item["organization"] = organization.pk
 		print(rdata)
-		serializer = ResultSerializer(data=rdata)
+		serializer = ResultSerializer(data=rdata, many=True)
 
 		if serializer.is_valid():
 			model = serializer.save()
-			data = serializer.data
+			# data = serializer.data
 			data["response"] = "Successfully created"
 			data["error_message"] = None
 
@@ -289,6 +295,129 @@ def create_result_view(request):
 			data["response"] = "Error"
 			data["error_message"] = serializer.errors
 			return Response(data=data, status=400)
+
+def check_header_course(list, item):
+
+	exist = False
+	for x in list:
+		if x["pk"] == item:
+			exist = True
+			print("exitsldkflsdfljk")
+			break
+	
+	return exist
+@api_view(['POST'])
+@permission_classes((IsAuthenticated,))
+def create_result_csv_view(request, pk):
+	if request.method == "POST" :
+
+		data = {}
+		file = request.data.get("file", None)
+		count = 0
+		error_message = ""
+		if file :
+			
+
+			data = {}
+			user = request.user
+			if user.is_admin :
+				organization = Organization.objects.get(account=user)
+			elif user.is_staff:
+				organization = Staff.objects.get(account=user).organization
+			else:
+				data["response"] = "Permission denied"
+				data["error_message"] = "You cann't create result"
+				return Response(data=data, status=403)
+
+			try:
+				exam = Exam.objects.get(pk=pk)
+				print(exam)
+				course_list = []
+				for x in exam.courses.all():
+					details = {}
+					details["name"] = x.name
+					details["pk"] = x.pk
+					course_list.append(details)
+				print(course_list)
+			except:
+				data = {}
+				data["response"] = "Error"
+				data["error_message"] = "Not found"
+				return Response(data=data, status=404)
+
+			try :
+				header = next(csv.reader(codecs.iterdecode(file, 'utf-8')), None)
+				if len(header) - 1 == len(course_list):
+					for x in header[1:]:
+						pk = x.split(",")[0]
+						# print(pk)
+						if not check_header_course(course_list, int(pk)):
+							data = {}
+							data["response"] = "Error"
+							data["error_message"] = "Course not found"
+							return Response(data=data, status=404)
+
+						
+				else:
+					data = {}
+					data["response"] = "Error"
+					data["error_message"] = "dlskf"
+					return Response(data=data, status=404)
+				csv_reader = csv.DictReader(codecs.iterdecode(file, 'utf-8'))
+
+				result_list = []
+				for row in csv_reader:
+					count = count + 1
+					print(row)
+					item = {}
+					item["organization"] = organization.pk
+					item["student"] = row["roll"]
+					item["exam"] = exam.pk
+					for x in header[1:]:
+						item = {}
+						item["organization"] = organization.pk
+						item["student"] = row["roll"]
+						item["exam"] = exam.pk
+						pk = x.split(",")[0]
+						print(int(pk))
+						item["course"] = int(pk)
+						item["mark"] = row[x]
+
+						result_list.append(item)
+
+
+
+
+
+				print(result_list)
+				serializer = ResultSerializer(data=result_list, many=True)
+
+				if serializer.is_valid():
+					model = serializer.save()
+					print(error_message)
+					data['response'] = "Upload Successfully"
+					data['error_message'] = error_message
+					return Response(data=data)
+				else:
+					data["response"] = "Error"
+
+					data["error_message"] = serializer.errors
+
+
+
+
+
+
+
+					return Response(data=data, status=400)
+			except :
+				data['response'] = ""
+				data['error_message'] = "CSV doesn't accepted"
+				return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+		else :
+			data['response'] = ""
+			data['error_message'] = "CSV file is required."
+			return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -348,17 +477,19 @@ def update_result_view(request, pk):
 			return Response(data=data, status=400)
 
 
-def find_student(list, item):
+def find_student(list, item): # item is a course and list is a result list
 	for x in list:
 		details = {}
 		if x["course__pk"] == item["pk"]:
-			details["pk"] = item["pk"]
-			details["name"] = item["name"]
+			details["pk"] = x["pk"]
+			details["course"] = item["pk"]
+			details["course_name"] = item["name"]
 			details["mark"] = x["marks"]
 			return details
-	details["pk"] = item["pk"]
-	details["name"] = item["name"]
-	details["mark"] = "-"
+	details["pk"] = None
+	details["course"] = item["pk"]
+	details["course_name"] = item["name"]
+	details["mark"] = 0
 	return details
 @api_view(['GET', ])
 @permission_classes((IsAuthenticated,))
@@ -378,8 +509,11 @@ def student_indivisula_result_view(request, exam_pk, student_pk):
 
 		result = Result.objects\
 			.filter(exam=exam, student=student)\
-				.values("course__pk")\
+				.values("pk", "course__pk")\
 					.annotate(marks=Sum("mark"))
+
+		
+		print(result)
 			
 
 		result_list = []
@@ -411,6 +545,7 @@ def check_course_list(list, item):
 				is_exist = 1
 				break
 		if is_exist == None:
+			details["pk"] = None
 			details["course"] = x["pk"]
 			details["course_name"] = x["name"]
 			details["mark"] = "-"
@@ -420,13 +555,6 @@ def check_course_list(list, item):
 
 def create_student_set(list):
 	new_list = []
-
-
-
-
-
-
-
 
 	def check(abc):
 		for x in new_list:
@@ -443,6 +571,7 @@ def create_student_set(list):
 			for y in list:
 				if y["student__pk"] == details["student"]:
 					course_details = {}
+					course_details["pk"] = y["pk"]
 					course_details["course"] = y["course__pk"]
 					course_details["course_name"] = y["course__name"]
 					course_details["mark"] = str(y["mark__sum"])
@@ -478,7 +607,7 @@ def exam_result_view(request, pk):
 		# 	print(key, model)
 
 		result = Result.objects.filter(exam=exam)\
-			.values("course__name", "student__pk", "course__pk", "student__account__username")\
+			.values("pk", "course__name", "student__pk", "course__pk", "student__account__username")\
 				.annotate(Sum("mark"))
 
 		
@@ -489,9 +618,13 @@ def exam_result_view(request, pk):
 
 		new_list = []
 		for x in create_student_set(result):
+			print(x)
+
+			print("\n")
 
 			new_list.append(check_course_list(course_list, x))
 			
+
 
 		# result_list = []
 		# for x in result:
@@ -505,3 +638,22 @@ def exam_result_view(request, pk):
 
 		# print(result_list)
 		return Response(data=new_list)
+
+
+
+
+@api_view(['GET', ])
+@permission_classes((IsAuthenticated,))
+def course_details_view(request, pk):
+
+	if request.method == "GET":
+		data = {}
+
+		try:
+			instance = Course.objects.get(pk=pk)
+			serializer = CourseSerializer(instance)
+			return Response(data=serializer.data)
+		except:
+			data["response"] = "Error"
+			data["error_message"] = "not found"
+			return Response(data=data, status=404)

@@ -1,3 +1,4 @@
+import email
 from django.db import models
 
 from account.models import (
@@ -16,10 +17,8 @@ class Course(models.Model):
 
 	organization                = models.ForeignKey(Organization, on_delete=models.CASCADE)
 	name                        = models.CharField(max_length=100)
-	fee 						= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-	discount 					= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-	is_discount_available 		= models.BooleanField(default=False)
-	is_availabe 				= models.BooleanField(default=True)
+	is_available 				= models.BooleanField(default=True)
+	description 				= models.TextField(null=True, blank=True)
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
 
@@ -35,6 +34,9 @@ class Exam(models.Model):
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
 
+	def __str__(self):
+		return str(self.pk)
+
 class Result(models.Model):
 
 	organization                = models.ForeignKey(Organization, on_delete=models.CASCADE)
@@ -44,3 +46,6 @@ class Result(models.Model):
 	mark 						= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
+
+	# class Meta:
+	# 	unique_together = ('exam', 'student', 'course')

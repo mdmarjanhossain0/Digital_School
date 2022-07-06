@@ -193,16 +193,9 @@ class UpdateStaffSerializer(serializers.ModelSerializer):
 			staff.address = validated_data.get("address", staff.address)
 			staff.save()
 			
+
+			instance.save()
 			return instance
-
-
-
-
-
-
-
-
-
 
 
 class BatchSerializer(serializers.ModelSerializer):
@@ -222,19 +215,12 @@ class BatchSerializer(serializers.ModelSerializer):
 
 
 
-
-
-
-
-
-
-
-
 class StudentRegitrationSerializer(serializers.ModelSerializer):
 
 	password2 				= serializers.CharField(style={'input_type': 'password'}, write_only=True)
-	batch 					= serializers.IntegerField(allow_null=True)
+	batch 					= serializers.IntegerField(allow_null=True, required=False)
 	address 				= serializers.CharField(required=False)
+	group 					= serializers.CharField(required=False)
 
 	class Meta:
 		model = Account
@@ -248,7 +234,8 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 
 
 			'batch',
-			'address'
+			'address',
+			"group"
 			]
 		extra_kwargs = {
 				'password': {'write_only': True},
@@ -282,7 +269,8 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 				account=account,
 				organization = organization,
 				batch = batch,
-				address = self.validated_data.get("address", None)
+				address = self.validated_data.get("address", None),
+				group = self.validated_data.get("group", None)
 			)
 		else:
 			student = Student(
@@ -299,6 +287,9 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 class StudentUpdateSerializer(serializers.ModelSerializer):
 
 	address 				= serializers.CharField(required=False)
+	batch 					= serializers.IntegerField(allow_null=True, required=False)
+	address 				= serializers.CharField(required=False)
+	group 					= serializers.CharField(required=False)
 
 	class Meta:
 		model = Account
@@ -308,25 +299,33 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
 			'mobile',
 			'profile_picture',
 			'batch',
-			'address'
+			'address',
+			"group"
 			]	
 
 	def update(self, instance, validated_data):
+		student = Student.objects.get(account=instance)
 
+		instance.email = validated_data.get("email", instance.email)
+		instance.username = validated_data.get("username", instance.username)
+		instance.mobile = validated_data.get("mobile", instance.mobile)
+		instance.profile_picture = validated_data.get("profile_picture", instance.profile_picture)
 
-			student = Student.objects.get(account=instance)
-
-			instance.email = validated_data.get("email", instance.email)
-			instance.username = validated_data.get("username", instance.username)
-			instance.mobile = validated_data.get("mobile", instance.mobile)
-			instance.profile_picture = validated_data.get("profile_picture", instance.profile_picture)
-
+		batch_pk = validated_data.get("batch", None)
+		if batch_pk != None:
+			if Batch.objects.filter(pk=batch_pk).exists():
+				student.batch = Batch.objects.get(pk=batch_pk)
+			else:
+				raise serializers.ValidationError({'response': 'Error', "error_message": "batch not found"})
 			
-			student.batch = validated_data.get("batch", student.batch)
-			student.address = validated_data.get("address", student.address)
-			student.save()
-			
-			return instance
+		student.address = validated_data.get("address", student.address)
+		student.group = validated_data.get("group", student.group)
+		student.save()
+		
+
+
+		instance.save()
+		return instance
 
 
 
@@ -416,6 +415,14 @@ class UpdateTeacherSerializer(serializers.ModelSerializer):
 			teacher.address = validated_data.get("address", teacher.address)
 			teacher.save()
 			
+
+
+
+
+
+
+
+			instance.save()
 			return instance
 
 
@@ -460,55 +467,10 @@ class StaffSerializer(serializers.ModelSerializer):
 		return obj.account.profile_picture.url
 
 
-
-
-class StaffSerializer(serializers.ModelSerializer):
-
-	address 					= serializers.CharField(required=False)
-	pk 							= serializers.SerializerMethodField("get_pk")
-	email 						= serializers.SerializerMethodField("get_email")
-	mobile 						= serializers.SerializerMethodField("get_mobile")
-	username 					= serializers.SerializerMethodField("get_username")
-	profile_picture 			= serializers.SerializerMethodField("get_profile_picture")
-
-
-	class Meta:
-		model = Staff
-		fields = [
-			'pk',
-			'email',
-			'username',
-			'mobile',
-			'profile_picture',
-			'address',
-			'balance',
-			'created_at',
-			'updated_at'
-			]
-
-	def get_pk(self, obj):
-		return obj.account.pk
-
-	def get_email(self, obj):
-		return obj.account.email
-
-	def get_mobile(self, obj):
-		return obj.account.mobile
-
-	def get_username(self, obj):
-		return obj.account.username
-
-	def get_profile_picture(self, obj):
-		if obj.account.profile_picture:
-			return obj.account.profile_picture.url
-		else:
-			return None
-
-
 class StudentSerializer(serializers.ModelSerializer):
 
 	address 					= serializers.CharField(required=False)
-	pk 							= serializers.SerializerMethodField("get_pk")
+	# pk 							= serializers.SerializerMethodField("get_pk")
 	email 						= serializers.SerializerMethodField("get_email")
 	mobile 						= serializers.SerializerMethodField("get_mobile")
 	username 					= serializers.SerializerMethodField("get_username")
@@ -535,8 +497,8 @@ class StudentSerializer(serializers.ModelSerializer):
 			'updated_at'
 			]
 
-	def get_pk(self, obj):
-		return obj.account.pk
+	# def get_pk(self, obj):
+	# 	return obj.account.pk
 
 	def get_email(self, obj):
 		return obj.account.email
@@ -549,6 +511,9 @@ class StudentSerializer(serializers.ModelSerializer):
 
 	def get_profile_picture(self, obj):
 		if obj.account.profile_picture:
+			# return get_photo_url(self, obj)
+
+
 			return obj.account.profile_picture.url
 		else:
 			return None

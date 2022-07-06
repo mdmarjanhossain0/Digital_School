@@ -23,49 +23,35 @@ from academic.models import (
 
 
 from payment.models import (
-    StaffPayment,
-    StudentPayment,
-    TeacherPayment,
-    OtherPayment
+	Payments
 )
 
 
 
+class PaymentSerializer(serializers.ModelSerializer):
 
-class StaffPaymentSerializer(serializers.ModelSerializer):
+	username = serializers.SerializerMethodField("get_username")
 
-    class Meta:
+	class Meta:
 
-        model = StaffPayment
+		model = Payments
 
-        fields = "__all__"
+		fields = [
+			"organization",
+			"pk",
+			"account",
+			"note",
+			"fee",
+			"fine",
+			"discount",
+			"created_at",
+			"updated_at",
+			 "username"
+			 ]
 
-
-
-class StudentPaymentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-
-        model = StudentPayment
-
-        fields = "__all__"
-
-class TeacherPaymentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-
-        model = TeacherPayment
-
-        fields = "__all__"
-
-
-
-
-
-class OtherPaymentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-
-        model = OtherPayment
-
-        fields = "__all__"
+	def get_username(self, obj):
+		if obj.account:
+			return obj.account.username
+		else:
+			return None
+		

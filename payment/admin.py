@@ -1,10 +1,7 @@
 from django.contrib import admin
 
 from payment.models import (
-    StaffPayment,
-    StudentPayment,
-    TeacherPayment,
-    OtherPayment
+    Payment
 )
 
 
@@ -12,7 +9,7 @@ from payment.models import (
 
 
 
-admin.site.register(StaffPayment)
-admin.site.register(StudentPayment)
-admin.site.register(TeacherPayment)
-admin.site.register(OtherPayment)
+
+
+
+admin.site.register(Payment)

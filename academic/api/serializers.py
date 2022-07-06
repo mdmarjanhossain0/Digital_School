@@ -31,9 +31,8 @@ class CourseSerializer(serializers.ModelSerializer):
 			"pk",
 			"organization",
 			"name",
-			"fee",
-			"is_discount_available",
-			"is_availabe"
+			"is_available",
+			"description"
 		]
 
 		# read_only_fields = ("pk",)
@@ -47,10 +46,11 @@ class CourseSerializer(serializers.ModelSerializer):
 	
 	
 	
-	def update(self, instance, validated_data):
+	# def update(self, instance, validated_data):
 
-		instance.name = validated_data.get("name", instance.name)
-		return instance
+	# 	instance.name = validated_data.get("name", instance.name)
+	# 	instance.name = validated_data.get("description", instance.name)
+	# 	return instance
 
 class ExamSerializer(serializers.ModelSerializer):
 
@@ -76,6 +76,29 @@ class ExamSerializer(serializers.ModelSerializer):
 
 	# 	instance.name = validated_data.get("name", instance.name)
 	# 	return instance
+
+
+
+
+class ExamListSerializer(serializers.ModelSerializer):
+
+	courses 					= CourseSerializer(many=True)
+
+	class Meta:
+
+		model = Exam
+		fields = [
+			"pk",
+			"organization",
+			"batch",
+			"courses",
+			"name",
+			"schedule"
+		]
+		extra_kwargs = {
+			'organization': {'write_only': True},
+			"pk": {"read_only": True}
+		}
 
 
 

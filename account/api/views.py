@@ -54,6 +54,8 @@ from account.api.serializers import (
 
 
 
+def get_photo_url(request, photo_url):
+	return request.build_absolute_uri(photo_url)
 
 class ObtainAuthTokenView(APIView):
 
@@ -332,6 +334,7 @@ def update_staff_view(request, pk):
 def registration_student_view(request):
 
 	if request.method == 'POST':
+		print(request.data)
 		data = {}
 		email = request.data.get('email', '0').lower()
 		if validate_email(email) != None:
@@ -351,34 +354,51 @@ def registration_student_view(request):
 			data['error_message'] = 'That username is already in use.'
 			data['response'] = 'Error'
 			return Response(data)
+			
 		context = {}
-		organization = Organization.objects.get(account=request.user)
+		user = request.user
+		if user.is_admin :
+			organization = Organization.objects.get(account=user)
+		elif user.is_staff:
+			organization = Staff.objects.get(account=user).organization
+		else:
+			data["response"] = "Error"
+			data["error_message"] = "You have no permission to admit student"
+			return Response(data=data, status=403)
 		context["organization"] = organization
 		serializer = StudentRegitrationSerializer(data=request.data, context=context)
 		
 		if serializer.is_valid():
 			account = serializer.save()
-			data['response'] = 'successfully registered new user.'
+			student = Student.objects.get(account=account)
+			data['response'] = 'successfully admit new student.'
 
 			data['email'] = account.email
 			data['username'] = account.username
-			data['pk'] = account.pk
+			data['pk'] = student.pk
 			data["mobile"] = account.mobile
-			data["is_admin"] = False
-			data["is_staff"] = False
-			data["is_teacher"] = False
+			if account.profile_picture:
+				data["profile_picture"] = get_photo_url(request, account.profile_picture)
+			else:
+				data["profile_picture"] = None
+			data["is_active"] = account.is_active
 			data["balance"] = 0.00
 			data["created_at"] = account.date_joined
 			data["updated_at"] = account.last_login
 
 			data["address"] = serializer.data.get("address", None)
-			data["organization_name"] = organization.organization_name
-
-			token = Token.objects.get(user=account).key
-			data['token'] = token
+			if student.batch:
+				data["batch"] = student.batch.pk
+				data["batch_name"] = student.batch.name
+			else:
+				data["batch"] = None
+				data["batch_name"] = None
+			data["group"] = student.group
+			return Response(data=data)
 		else:
 			data = serializer.errors
-		return Response(data)
+
+			return Response(data=data, status=400)
 
 
 
@@ -391,53 +411,81 @@ def registration_student_view(request):
 def update_student_view(request, pk):
 
 	if request.method == 'PUT':
+
+		print(request.data)
 		data = {}
+		try:
+			instance = Account.objects.get(pk=pk)
+		except:
+			data["response"] = "Error"
+			data["error_message"] = "not found"
+			return Response(data=data, status=404)
+		
+
+
+
 		email = request.data.get('email', '0').lower()
-		if validate_email(email) != None:
+		if instance.email != email and validate_email(email) != None:
 			data['error_message'] = 'That email is already in use.'
 			data['response'] = 'Error'
 			return Response(data)
 
 
 		mobile = request.data.get('mobile', '0').lower()
-		if validate_mobile(mobile) != None:
+		if instance.mobile != mobile and validate_mobile(mobile) != None:
 			data['error_message'] = 'That phone number is already in use.'
 			data['response'] = 'Error'
 			return Response(data)
 
 		username = request.data.get('username', '0')
-		if validate_username(username) != None:
+		if instance.username != username and validate_username(username) != None:
 			data['error_message'] = 'That username is already in use.'
 			data['response'] = 'Error'
 			return Response(data)
 
-		organization = Organization.objects.get(account=request.user)
-		instance = Account.objects.get(pk=pk)
-		serializer = StudentUpdateSerializer(data=request.data, instance=instance)
+		print(instance)
+		serializer = StudentUpdateSerializer(data=request.data, instance=instance, partial=True)
 		
 		if serializer.is_valid():
 			account = serializer.save()
-			data['response'] = 'successfully registered new user.'
+			student = Student.objects.get(account=account)
+			data['response'] = 'successfully update student'
 
 			data['email'] = account.email
 			data['username'] = account.username
-			data['pk'] = account.pk
+			data['pk'] = student.pk
 			data["mobile"] = account.mobile
-			data["is_admin"] = False
-			data["is_staff"] = False
-			data["is_teacher"] = False
+			if account.profile_picture:
+				data["profile_picture"] = get_photo_url(request, account.profile_picture)
+			else:
+				data["profile_picture"] = None
+			data["is_active"] = account.is_active
 			data["balance"] = 0.00
 			data["created_at"] = account.date_joined
 			data["updated_at"] = account.last_login
 
 			data["address"] = serializer.data.get("address", None)
-			data["organization_name"] = organization.organization_name
-
-			token = Token.objects.get(user=account).key
-			data['token'] = token
+			if student.batch:
+				data["batch"] = student.batch.pk
+				data["batch_name"] = student.batch.name
+			else:
+				data["batch"] = None
+				data["batch_name"] = None
+			data["group"] = student.group
+			return Response(data=data)
 		else:
 			data = serializer.errors
-		return Response(data)
+
+
+
+
+
+
+
+
+
+			print(serializer.errors)
+			return Response(data=data, status=400)
 
 
 
@@ -782,10 +830,12 @@ def staff_details_view(request, pk):
 def student_details_view(request, pk):
 
 	try:
-		account = Account.objects.get(pk=pk)
-		student = Student.objects.get(account=account)
+		student = Student.objects.get(pk=pk)
 	except Account.DoesNotExist:
-		return Response(status=status.HTTP_404_NOT_FOUND)
+		data = {}
+		data["response"] = "Error"
+		data["error_message"] = "Not found"
+		return Response(data=data, status=status.HTTP_404_NOT_FOUND)
 
 	if request.method == 'GET':
 		serializer = StudentSerializer(student)
