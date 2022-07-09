@@ -41,6 +41,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 			"pk",
 			"account",
 			"note",
+			"type",
 			"fee",
 			"fine",
 			"discount",

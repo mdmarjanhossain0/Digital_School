@@ -348,9 +348,6 @@ class RegisterTeacherSerializer(serializers.ModelSerializer):
 			'password',
 			'password2',
 
-
-
-
 			'address'
 			]
 		extra_kwargs = {
@@ -430,7 +427,6 @@ class UpdateTeacherSerializer(serializers.ModelSerializer):
 class StaffSerializer(serializers.ModelSerializer):
 
 	address 					= serializers.CharField(required=False)
-	pk 							= serializers.SerializerMethodField("get_pk")
 	email 						= serializers.SerializerMethodField("get_email")
 	mobile 						= serializers.SerializerMethodField("get_mobile")
 	username 					= serializers.SerializerMethodField("get_username")
@@ -451,9 +447,6 @@ class StaffSerializer(serializers.ModelSerializer):
 			'updated_at'
 			]
 
-	def get_pk(self, obj):
-		return obj.account.pk
-
 	def get_email(self, obj):
 		return obj.account.email
 
@@ -463,8 +456,12 @@ class StaffSerializer(serializers.ModelSerializer):
 	def get_username(self, obj):
 		return obj.account.username
 
-	def get_pk(self, obj):
-		return obj.account.profile_picture.url
+	def get_profile_picture(self, obj):
+		if obj.account.profile_picture:
+			# return get_photo_url(self, obj)
+			return obj.account.profile_picture.url
+		else:
+			return None
 
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -534,7 +531,6 @@ class StudentSerializer(serializers.ModelSerializer):
 class TeacherSerializer(serializers.ModelSerializer):
 
 	address 					= serializers.CharField(required=False)
-	pk 							= serializers.SerializerMethodField("get_pk")
 	email 						= serializers.SerializerMethodField("get_email")
 	mobile 						= serializers.SerializerMethodField("get_mobile")
 	username 					= serializers.SerializerMethodField("get_username")
@@ -554,9 +550,6 @@ class TeacherSerializer(serializers.ModelSerializer):
 			'created_at',
 			'updated_at'
 			]
-
-	def get_pk(self, obj):
-		return obj.account.pk
 
 	def get_email(self, obj):
 		return obj.account.email

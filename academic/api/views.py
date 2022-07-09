@@ -21,6 +21,8 @@ from itertools import groupby
 from django.core import serializers
 from django.db.models import Sum
 
+from rest_framework.exceptions import ValidationError
+
 
 
 from academic.models import (
@@ -247,10 +249,12 @@ class ApiExamListView(ListAPIView):
 			organization = Organization.objects.get(account=user)
 		elif user.is_staff:
 			organization = Staff.objects.get(account=user).organization
-		elif user.teacher:
-			organization = Teacher.objects.get(account=user).organization
-		else: 
-			organization = Student.objects.get(account=user).organization
+		else :
+			data = {}
+			print("user not admin")
+			data["response"] = "Error"
+			data["error_message"] = "Permission denied"
+			raise ValidationError(data)
 
 		return Exam.objects.filter(organization=organization)
 
