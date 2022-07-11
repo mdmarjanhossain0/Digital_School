@@ -19,6 +19,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .validators import validate_email, validate_mobile, validate_username
 from rest_framework.authtoken.models import Token
 
+import django_filters
+
 
 
 
@@ -70,7 +72,14 @@ class ObtainAuthTokenView(APIView):
 		password = request.POST.get('password')
 		print(password)
 		account = authenticate(mobile=mobile, password=password)
-		organization = Organization.objects.get(account=account)
+		if account.is_admin :
+			organization = Organization.objects.get(account=account)
+		elif account.is_staff :
+			organization = Staff.objects.get(account=account).organization
+		elif account.is_teacher :
+			organization = Teacher.objects.get(account=account).organization
+		else:
+			organization = Student.objects.get(account=account).organization
 		if account:
 			try:
 				token = Token.objects.get(user=account)
@@ -82,8 +91,8 @@ class ObtainAuthTokenView(APIView):
 			context['username'] = account.username
 			context['pk'] = account.pk
 			context["mobile"] = account.mobile
-			context["is_admin"] = True
-			context["is_staff"] = True
+			context["is_admin"] = account.is_admin
+			context["is_staff"] = account.is_staff
 			context["is_teacher"] = account.is_teacher
 			context["is_student"] = True
 			context["balance"] = 0.00
@@ -378,29 +387,32 @@ def registration_student_view(request):
 		if serializer.is_valid():
 			account = serializer.save()
 			student = Student.objects.get(account=account)
+
+
+			data = StudentSerializer(student).data
 			data['response'] = 'successfully admit new student.'
 
 			data['email'] = account.email
-			data['username'] = account.username
-			data['pk'] = student.pk
-			data["mobile"] = account.mobile
-			if account.profile_picture:
-				data["profile_picture"] = get_photo_url(request, account.profile_picture)
-			else:
-				data["profile_picture"] = None
-			data["is_active"] = account.is_active
-			data["balance"] = 0.00
-			data["created_at"] = account.date_joined
-			data["updated_at"] = account.last_login
+			# data['username'] = account.username
+			# data['pk'] = student.pk
+			# data["mobile"] = account.mobile
+			# if account.profile_picture:
+			# 	data["profile_picture"] = get_photo_url(request, account.profile_picture)
+			# else:
+			# 	data["profile_picture"] = None
+			# data["is_active"] = account.is_active
+			# data["balance"] = 0.00
+			# data["created_at"] = account.date_joined
+			# data["updated_at"] = account.last_login
 
-			data["address"] = serializer.data.get("address", None)
-			if student.batch:
-				data["batch"] = student.batch.pk
-				data["batch_name"] = student.batch.name
-			else:
-				data["batch"] = None
-				data["batch_name"] = None
-			data["group"] = student.group
+			# data["address"] = serializer.data.get("address", None)
+			# if student.batch:
+			# 	data["batch"] = student.batch.pk
+			# 	data["batch_name"] = student.batch.name
+			# else:
+			# 	data["batch"] = None
+			# 	data["batch_name"] = None
+			# data["group"] = student.group
 			return Response(data=data)
 		else:
 			data = serializer.errors
@@ -622,22 +634,21 @@ def update_teacher_view(request, pk):
 
 
 
-
-
-
-
-
+class StaffFilter(django_filters.FilterSet):
+    username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+    mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
+    pk = django_filters.CharFilter(lookup_expr='exact')
+    class Meta:
+        model= Staff
+        fields = ["pk", "username", 'mobile']
 
 class ApiStaffListView(ListAPIView):
 	serializer_class = StaffSerializer
 	authentication_classes = {TokenAuthentication}
 	permission_classes = {IsAuthenticated}
 	pagination_classes = PageNumberPagination
-	filter_backends = {SearchFilter, OrderingFilter, DjangoFilterBackend}
-	search_fields = {'account__username', 'account__mobile',
-					 'account__email'}
-	filterset_fields =  {'account__username', 'account__mobile',
-					 'account__email'}
+	filter_class = StaffFilter
+	filter_backends = (DjangoFilterBackend, OrderingFilter,)
 
 	def get_queryset(self):
 		user = self.request.user
@@ -656,17 +667,21 @@ class ApiStaffListView(ListAPIView):
 
 
 
+class StudentFilter(django_filters.FilterSet):
+    username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+    mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
+    pk = django_filters.CharFilter(lookup_expr='exact')
+    class Meta:
+        model= Student
+        fields = ["pk", "username", 'mobile']
 
 class ApiStudentListView(ListAPIView):
 	serializer_class = StudentSerializer
 	authentication_classes = {TokenAuthentication}
 	permission_classes = {IsAuthenticated}
 	pagination_classes = PageNumberPagination
-	filter_backends = {SearchFilter, OrderingFilter, DjangoFilterBackend}
-	search_fields = {'account__username', 'account__mobile',
-					 'account__email'}
-	filterset_fields =  {'account__username', 'account__mobile',
-					 'account__email'}
+	filter_class = StudentFilter
+	filter_backends = (DjangoFilterBackend, OrderingFilter,)
 
 	def get_queryset(self):
 		user = self.request.user
@@ -683,17 +698,21 @@ class ApiStudentListView(ListAPIView):
 
 
 
+class TeacherFilter(django_filters.FilterSet):
+    username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+    mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
+    pk = django_filters.CharFilter(lookup_expr='exact')
+    class Meta:
+        model= Teacher
+        fields = ["pk", "username", 'mobile']
 
 class ApiTeacherListView(ListAPIView):
 	serializer_class = TeacherSerializer
 	authentication_classes = {TokenAuthentication}
 	permission_classes = {IsAuthenticated}
 	pagination_classes = PageNumberPagination
-	filter_backends = {SearchFilter, OrderingFilter, DjangoFilterBackend}
-	search_fields = {'account__username', 'account__mobile',
-					 'account__email'}
-	filterset_fields =  {'account__username', 'account__mobile',
-					 'account__email'}
+	filter_class = TeacherFilter
+	filter_backends = (DjangoFilterBackend, OrderingFilter,)
 
 	def get_queryset(self):
 		user = self.request.user

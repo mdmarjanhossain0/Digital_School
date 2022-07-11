@@ -93,11 +93,6 @@ class Account(AbstractBaseUser):
 
 
 class Organization(models.Model):
-
-
-
-
-
 	account                     = models.OneToOneField(Account, on_delete=models.CASCADE)
 	organization_name           = models.CharField(max_length=150, unique=True)
 	address                     = models.CharField(max_length=150, null=True, blank=True)
@@ -121,6 +116,8 @@ class Staff(models.Model):
 class Batch(models.Model):
 	organization                = models.ForeignKey(Organization, on_delete=models.CASCADE)
 	name                        = models.CharField(max_length=32, null=False, blank=False)
+	fee 						= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+	discount 					= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
 

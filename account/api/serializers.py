@@ -108,15 +108,6 @@ class UpdateOrganizationSerializer(serializers.ModelSerializer):
 			
 
 
-
-
-
-
-
-
-
-
-
 class RegistrationStaffSerializer(serializers.ModelSerializer):
 
 	password2 				= serializers.CharField(style={'input_type': 'password'}, write_only=True)
@@ -205,6 +196,8 @@ class BatchSerializer(serializers.ModelSerializer):
 		fields = [
 			"pk",
 			"name",
+			"fee",
+			"discount",
 			"organization",
 			"created_at",
 			"updated_at"
@@ -221,6 +214,7 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 	batch 					= serializers.IntegerField(allow_null=True, required=False)
 	address 				= serializers.CharField(required=False)
 	group 					= serializers.CharField(required=False)
+	balance 				= serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
 
 	class Meta:
 		model = Account
@@ -233,6 +227,7 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 			'password2',
 
 
+			'balance',
 			'batch',
 			'address',
 			"group"
@@ -268,6 +263,7 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 			student = Student(
 				account=account,
 				organization = organization,
+				balance = self.validated_data.get("balance", 0.00),
 				batch = batch,
 				address = self.validated_data.get("address", None),
 				group = self.validated_data.get("group", None)
@@ -276,6 +272,7 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 			student = Student(
 				account=account,
 				organization = organization,
+				balance = self.validated_data.get("balance", 0.00),
 				address = self.validated_data.get("address", None)
 			)
 		student.save()
