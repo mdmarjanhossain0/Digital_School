@@ -84,6 +84,8 @@ class ExamListSerializer(serializers.ModelSerializer):
 
 	courses 					= CourseSerializer(many=True)
 
+	is_result_published 		= serializers.SerializerMethodField("get_is_result_published")
+
 	class Meta:
 
 		model = Exam
@@ -93,12 +95,19 @@ class ExamListSerializer(serializers.ModelSerializer):
 			"batch",
 			"courses",
 			"name",
-			"schedule"
+			"schedule",
+			"is_result_published"
 		]
 		extra_kwargs = {
 			'organization': {'write_only': True},
 			"pk": {"read_only": True}
 		}
+
+	def get_is_result_published(self, obj):
+			if Result.objects.filter(exam=obj).exists():
+				return True
+			else :
+				return False
 
 
 

@@ -34,6 +34,23 @@ from account.models import (
 	Teacher
 )
 
+from academic.models import (
+    Course,
+    Exam,
+    Result
+)
+
+
+
+from payment.models import (
+	Payments
+)
+
+from payment.api.serializers import (
+	PaymentSerializer
+)
+
+
 from account.api.serializers import (
 	BatchSerializer,
 	RegistrationOrganizationSerializer,
@@ -47,7 +64,25 @@ from account.api.serializers import (
 	UpdateOrganizationSerializer,
 	UpdateStaffSerializer,
 	StudentUpdateSerializer,
-	UpdateTeacherSerializer
+	UpdateTeacherSerializer,
+
+
+
+
+
+	ChangePasswordSerializer
+)
+
+
+
+
+
+
+from academic.api.serializers import (
+	CourseSerializer,
+	ExamSerializer,
+	ResultSerializer,
+	ExamListSerializer
 )
 
 
@@ -68,19 +103,28 @@ class ObtainAuthTokenView(APIView):
 		context = {}
 
 		mobile = request.POST.get('username')
-		print(mobile)
 		password = request.POST.get('password')
-		print(password)
+		balance = 0.00
 		account = authenticate(mobile=mobile, password=password)
-		if account.is_admin :
-			organization = Organization.objects.get(account=account)
-		elif account.is_staff :
-			organization = Staff.objects.get(account=account).organization
-		elif account.is_teacher :
-			organization = Teacher.objects.get(account=account).organization
-		else:
-			organization = Student.objects.get(account=account).organization
+		print(account)
 		if account:
+			if account.is_admin :
+				organization = Organization.objects.get(account=account)
+			elif account.is_staff :
+				staff = Staff.objects.get(account=account)
+				organization = staff.organization
+				balance = staff.balance
+			elif account.is_teacher :
+				teacher = Teacher.objects.get(account=account)
+				organization = teacher.organization
+
+				balance = teacher.balance
+			else:
+				student = Student.objects.get(account=account)
+				organization = student.organization
+				balance = student.balance
+
+				
 			try:
 				token = Token.objects.get(user=account)
 			except Token.DoesNotExist:
@@ -95,7 +139,7 @@ class ObtainAuthTokenView(APIView):
 			context["is_staff"] = account.is_staff
 			context["is_teacher"] = account.is_teacher
 			context["is_student"] = True
-			context["balance"] = 0.00
+			context["balance"] = balance
 			context["created_at"] = account.date_joined
 			context["updated_at"] = account.last_login
 			
@@ -656,15 +700,13 @@ class ApiStaffListView(ListAPIView):
 			organization = Organization.objects.get(account=user)
 		elif user.is_staff:
 			organization = Staff.objects.get(account=user).organization
-		elif user.teacher:
+		elif user.is_teacher:
 			organization = Teacher.objects.get(account=user).organization
 		else: 
 			organization = Student.objects.get(account=user).organization
 
 		return Staff.objects.filter(organization=organization)
-
-
-
+			
 
 
 class StudentFilter(django_filters.FilterSet):
@@ -689,7 +731,7 @@ class ApiStudentListView(ListAPIView):
 			organization = Organization.objects.get(account=user)
 		elif user.is_staff:
 			organization = Staff.objects.get(account=user).organization
-		elif user.teacher:
+		elif user.is_teacher:
 			organization = Teacher.objects.get(account=user).organization
 		else: 
 			organization = Student.objects.get(account=user).organization
@@ -720,7 +762,7 @@ class ApiTeacherListView(ListAPIView):
 			organization = Organization.objects.get(account=user)
 		elif user.is_staff:
 			organization = Staff.objects.get(account=user).organization
-		elif user.teacher:
+		elif user.is_teacher:
 			organization = Teacher.objects.get(account=user).organization
 		else: 
 			organization = Student.objects.get(account=user).organization
@@ -742,13 +784,50 @@ class ApiBatchListView(ListAPIView):
 			organization = Organization.objects.get(account=user)
 		elif user.is_staff:
 			organization = Staff.objects.get(account=user).organization
-		elif user.teacher:
+		elif user.is_teacher:
 			organization = Teacher.objects.get(account=user).organization
 		else: 
 			organization = Student.objects.get(account=user).organization
 
 		return Batch.objects.filter(organization=organization)
 
+
+
+
+@api_view(['GET', ])
+@permission_classes([IsAuthenticated])
+def student_profile_view(request):
+
+	if request.method == "GET":
+
+		data = {}
+		user = request.user
+		if not user.is_admin and not user.is_staff and not user.is_teacher :
+			student = Student.objects.get(account=user)
+		else :
+			data["response"] = "Permission deneid"
+			data["error_message"] = "Only student can see his/her profile"
+			return Response(data=data, status=403)
+
+
+		student_serializer = StudentSerializer(student)
+		data["student"] = student_serializer.data
+		batch = student.batch
+		if batch :
+			exams = Exam.objects.filter(batch=batch)
+			exam_serializer = ExamListSerializer(exams, many=True)
+			data["exams"] = exam_serializer.data
+		else :
+			data["exams"] = []
+
+		payments = Payments.objects.filter(account=user)
+		payments_serializer = PaymentSerializer(payments, many=True)
+		data["payments"] = payments_serializer.data
+		data["response"] = "Successful"
+		data["error_message"] = None
+		return Response(data=data)
+
+		
 
 
 @api_view(['DELETE', ])
@@ -956,4 +1035,41 @@ def delete_batch_view(request, pk):
 		except:
 			data["error_message"] = "Not found"
 			return Response(data, status=400)
-			
+
+
+
+
+
+
+class ChangePasswordView(UpdateAPIView):
+
+	serializer_class = ChangePasswordSerializer
+	model = Account
+	permission_classes = (IsAuthenticated,)
+	authentication_classes = (TokenAuthentication,)
+
+	def get_object(self, queryset=None):
+		obj = self.request.user
+		return obj
+
+	def update(self, request, *args, **kwargs):
+		self.object = self.get_object()
+		serializer = self.get_serializer(data=request.data)
+
+		if serializer.is_valid():
+			# Check old password
+			if not self.object.check_password(serializer.data.get("old_password")):
+				return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
+
+			# confirm the new passwords match
+			new_password = serializer.data.get("new_password")
+			confirm_new_password = serializer.data.get("confirm_new_password")
+			if new_password != confirm_new_password:
+				return Response({"new_password": ["New passwords must match"]}, status=status.HTTP_400_BAD_REQUEST)
+
+			# set_password also hashes the password that the user will get
+			self.object.set_password(serializer.data.get("new_password"))
+			self.object.save()
+			return Response({"response":"successfully changed password"}, status=status.HTTP_200_OK)
+
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

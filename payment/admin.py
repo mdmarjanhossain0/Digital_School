@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from payment.models import (
-    Payment
+    Payments
 )
 
 
@@ -12,4 +12,4 @@ from payment.models import (
 
 
 
-admin.site.register(Payment)
+admin.site.register(Payments)
