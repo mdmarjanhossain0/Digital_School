@@ -35,7 +35,8 @@ INSTALLED_APPS = [
 
     'account',
     'academic',
-    'payment'
+    'payment',
+    'notification'
 ]
 
 

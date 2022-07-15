@@ -70,7 +70,8 @@ from account.api.serializers import (
 
 
 
-	ChangePasswordSerializer
+	ChangePasswordSerializer,
+	UpdateProfileSerializer
 )
 
 
@@ -117,7 +118,6 @@ class ObtainAuthTokenView(APIView):
 			elif account.is_teacher :
 				teacher = Teacher.objects.get(account=account)
 				organization = teacher.organization
-
 				balance = teacher.balance
 			else:
 				student = Student.objects.get(account=account)
@@ -264,6 +264,49 @@ def update_organization_view(request, pk):
 		return Response(data)
 
 
+@api_view(['PUT', ])
+@permission_classes((IsAuthenticated,))
+def update_profile_view(request):
+
+	if request.method == 'PUT':
+		data = {}
+
+		instance = request.user
+
+		username = request.data.get('username', '0')
+		if instance.username != username and validate_username(username) != None:
+			data['error_message'] = 'That username is already in use.'
+			data['response'] = 'Error'
+			return Response(data)
+			
+		email = request.data.get('email', '0').lower()
+		if instance.email != email and validate_email(email) != None:
+			data['error_message'] = 'That email is already in use.'
+			data['response'] = 'Error'
+			return Response(data)
+
+
+		mobile = request.data.get('mobile', '0').lower()
+		if instance.mobile != mobile and validate_mobile(mobile) != None:
+			data['error_message'] = 'That phone number is already in use.'
+			data['response'] = 'Error'
+			return Response(data)
+
+
+		serializer = UpdateProfileSerializer(data=request.data, instance=instance)
+
+		if serializer.is_valid() :
+			serializer.save()
+			data["response"] = "Successfull"
+			data['error_message'] = None
+			return Response(data)
+		else :
+			data["response"] = "Error"
+			data['error_message'] = serializer.errors
+			return Response(data, status=400)
+		
+
+
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated])
 def registration_staff_view(request):
@@ -297,24 +340,27 @@ def registration_staff_view(request):
 		
 		if serializer.is_valid():
 			account = serializer.save()
+			staff = Staff.objects.get(account=account)
+			data = StaffSerializer(staff).data
+
 			data['response'] = 'successfully registered new user.'
 
-			data['email'] = account.email
-			data['username'] = account.username
-			data['pk'] = account.pk
-			data["mobile"] = account.mobile
-			data["is_admin"] = False
-			data["is_staff"] = True
-			data["is_teacher"] = account.is_teacher
-			data["balance"] = 0.00
-			data["created_at"] = account.date_joined
-			data["updated_at"] = account.last_login
+			# data['email'] = account.email
+			# data['username'] = account.username
+			# data['pk'] = account.pk
+			# data["mobile"] = account.mobile
+			# data["is_admin"] = False
+			# data["is_staff"] = True
+			# data["is_teacher"] = account.is_teacher
+			# data["balance"] = 0.00
+			# data["created_at"] = account.date_joined
+			# data["updated_at"] = account.last_login
 
-			data["address"] = serializer.data.get("address", None)
-			data["organization_name"] = organization.organization_name
+			# data["address"] = serializer.data.get("address", None)
+			# data["organization_name"] = organization.organization_name
 
-			token = Token.objects.get(user=account).key
-			data['token'] = token
+			# token = Token.objects.get(user=account).key
+			# data['token'] = token
 		else:
 			data = serializer.errors
 		return Response(data)
@@ -478,7 +524,8 @@ def update_student_view(request, pk):
 		print(request.data)
 		data = {}
 		try:
-			instance = Account.objects.get(pk=pk)
+			student = Student.objects.get(pk=pk)
+			instance = student.account
 		except:
 			data["response"] = "Error"
 			data["error_message"] = "not found"
@@ -487,6 +534,12 @@ def update_student_view(request, pk):
 
 
 
+		username = request.data.get('username', '0')
+		if instance.username != username and validate_username(username) != None:
+			data['error_message'] = 'That username is already in use.'
+			data['response'] = 'Error'
+			return Response(data)
+			
 		email = request.data.get('email', '0').lower()
 		if instance.email != email and validate_email(email) != None:
 			data['error_message'] = 'That email is already in use.'
@@ -500,41 +553,38 @@ def update_student_view(request, pk):
 			data['response'] = 'Error'
 			return Response(data)
 
-		username = request.data.get('username', '0')
-		if instance.username != username and validate_username(username) != None:
-			data['error_message'] = 'That username is already in use.'
-			data['response'] = 'Error'
-			return Response(data)
-
 		print(instance)
+
+		
 		serializer = StudentUpdateSerializer(data=request.data, instance=instance, partial=True)
 		
 		if serializer.is_valid():
 			account = serializer.save()
 			student = Student.objects.get(account=account)
+			data = StudentSerializer(student).data
 			data['response'] = 'successfully update student'
 
-			data['email'] = account.email
-			data['username'] = account.username
-			data['pk'] = student.pk
-			data["mobile"] = account.mobile
-			if account.profile_picture:
-				data["profile_picture"] = get_photo_url(request, account.profile_picture)
-			else:
-				data["profile_picture"] = None
-			data["is_active"] = account.is_active
-			data["balance"] = 0.00
-			data["created_at"] = account.date_joined
-			data["updated_at"] = account.last_login
+			# data['email'] = account.email
+			# data['username'] = account.username
+			# data['pk'] = student.pk
+			# data["mobile"] = account.mobile
+			# if account.profile_picture:
+			# 	data["profile_picture"] = get_photo_url(request, account.profile_picture)
+			# else:
+			# 	data["profile_picture"] = None
+			# data["is_active"] = account.is_active
+			# data["balance"] = 0.00
+			# data["created_at"] = account.date_joined
+			# data["updated_at"] = account.last_login
 
-			data["address"] = serializer.data.get("address", None)
-			if student.batch:
-				data["batch"] = student.batch.pk
-				data["batch_name"] = student.batch.name
-			else:
-				data["batch"] = None
-				data["batch_name"] = None
-			data["group"] = student.group
+			# data["address"] = serializer.data.get("address", None)
+			# if student.batch:
+			# 	data["batch"] = student.batch.pk
+			# 	data["batch_name"] = student.batch.name
+			# else:
+			# 	data["batch"] = None
+			# 	data["batch_name"] = None
+			# data["group"] = student.group
 			return Response(data=data)
 		else:
 			data = serializer.errors
@@ -592,24 +642,26 @@ def registration_teacher_view(request):
 		
 		if serializer.is_valid():
 			account = serializer.save()
+			teacher = Teacher.objects.get(account=account)
+			data = TeacherSerializer(teacher).data
 			data['response'] = 'successfully registered new user.'
 
-			data['email'] = account.email
-			data['username'] = account.username
-			data['pk'] = account.pk
-			data["mobile"] = account.mobile
-			data["is_admin"] = False
-			data["is_staff"] = False
-			data["is_teacher"] = True
-			data["balance"] = 0.00
-			data["created_at"] = account.date_joined
-			data["updated_at"] = account.last_login
+			# data['email'] = account.email
+			# data['username'] = account.username
+			# data['pk'] = account.pk
+			# data["mobile"] = account.mobile
+			# data["is_admin"] = False
+			# data["is_staff"] = False
+			# data["is_teacher"] = True
+			# data["balance"] = 0.00
+			# data["created_at"] = account.date_joined
+			# data["updated_at"] = account.last_login
 
-			data["address"] = serializer.data.get("address", None)
-			data["organization_name"] = organization.organization_name
+			# data["address"] = serializer.data.get("address", None)
+			# data["organization_name"] = organization.organization_name
 			
-			token = Token.objects.get(user=account).key
-			data['token'] = token
+			# token = Token.objects.get(user=account).key
+			# data['token'] = token
 		else:
 			data = serializer.errors
 		return Response(data)

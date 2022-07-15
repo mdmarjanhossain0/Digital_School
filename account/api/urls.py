@@ -46,7 +46,8 @@ from account.api.views import(
 	student_profile_view,
 
 
-	ChangePasswordView
+	ChangePasswordView,
+	update_profile_view
 	) 
 
 app_name='account'
@@ -63,6 +64,7 @@ urlpatterns = [
 
 
 
+	path("profile/update", update_profile_view, name="register"),
 	path("organizer/update/<pk>", update_organization_view, name="register"),
 	path("staff/update/<pk>", update_staff_view, name="register"),
 	path("student/update/<pk>", update_student_view, name="register"),

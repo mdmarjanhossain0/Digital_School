@@ -7,6 +7,7 @@ from academic.api.views import(
 	create_course_view,
 	create_exam_view,
 	create_result_view,
+	delete_exam_view,
 
 	update_course_view,
 	update_exam_view,
@@ -19,7 +20,10 @@ from academic.api.views import(
 	exam_result_view,
 
 	course_details_view,
-	create_result_csv_view
+	create_result_csv_view,
+
+
+	delete_exam_view
 	) 
 
 app_name='academic'
@@ -39,5 +43,8 @@ urlpatterns = [
 
 	path("result/<exam_pk>/<student_pk>", student_indivisula_result_view, name=""),
 	path("result/<pk>", exam_result_view, name=""),
-	path("course/<pk>", course_details_view, name="")
+	path("course/<pk>", course_details_view, name=""),
+
+
+	path("exam/delete/<pk>", delete_exam_view, name="")
 ]

@@ -661,3 +661,24 @@ def course_details_view(request, pk):
 			data["response"] = "Error"
 			data["error_message"] = "not found"
 			return Response(data=data, status=404)
+
+@api_view(['DELETE', ])
+@permission_classes((IsAuthenticated,))
+def delete_exam_view(request, pk):
+
+	if request.method == "DELETE" :
+
+		data = {}
+
+		try : 
+			exam = Exam.objects.get(pk=pk)
+		except :
+			data["response"] = "Error"
+			data["error_message"] = "not found"
+			return Response(data=data, status=404)
+
+		
+		exam.delete()
+		data["response"] = "Success"
+		data["error_message"] = "Exam Deleted"
+		return Response(data=data)

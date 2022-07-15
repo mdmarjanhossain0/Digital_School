@@ -62,8 +62,6 @@ class RegistrationOrganizationSerializer(serializers.ModelSerializer):
 		account.set_password(password)
 		account.save()
 
-
-
 		organization = Organization(
 			account = account,
 			organization_name = self.validated_data["organization_name"],
@@ -71,6 +69,55 @@ class RegistrationOrganizationSerializer(serializers.ModelSerializer):
 		)
 		organization.save()
 		return account
+
+
+
+class UpdateProfileSerializer(serializers.ModelSerializer):
+
+	address 				= serializers.CharField(required=False)
+
+	class Meta:
+		model = Account
+		fields = [
+			'email',
+			'username',
+			'mobile',
+			'profile_picture',
+
+			'address'
+			]
+
+
+	def update(self, instance, validated_data):
+
+		instance.username = validated_data.get("username", instance.username)
+		instance.mobile = validated_data.get("mobile", instance.mobile)
+		instance.email = validated_data.get("email", instance.email)
+		instance.profile = validated_data.get("profile_picture", instance.profile_picture)
+
+		if instance.is_admin :
+			obj = Organization.objects.get(account=instance)
+			obj.address = validated_data.get("address", obj.address)
+			obj.save()
+
+		elif instance.is_staff :
+			obj = Staff.objects.get(account=instance)
+			obj.address = validated_data.get("address", obj.address)
+			obj.save()
+
+		elif instance.is_teacher :
+			obj = Teacher.objects.get(account=instance)
+			obj.address = validated_data.get("address", obj.address)
+			obj.save()
+		
+		else :
+			obj = Student.objects.get(account=instance)
+			obj.address = validated_data.get("address", obj.address)
+			obj.save()
+		instance.save()
+		print(instance)
+		return instance
+
 
 
 
