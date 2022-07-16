@@ -114,8 +114,23 @@ def student_payment_view(request):
 
 			if payment.account :
 				account = payment.account
-				account = account.balance + payment.amount + payment.discount - payment.fine
-				account.save()
+
+
+				if account.is_admin :
+					# organization = Organization.objects.get(account=user)
+					pass
+				elif account.is_staff:
+					staff = Staff.objects.get(account=account)
+					staff.balance = staff.balance + payment.amount - payment.fine + payment.discount
+					staff.save()
+				elif account.is_teacher:
+					teacher = Teacher.objects.get(account=account)
+					teacher.balance = teacher.balance + payment.amount - payment.fine + payment.discount
+					teacher.save()
+				else: 
+					student = Student.objects.get(account=account)
+					student.balance = student.balance + payment.amount - payment.fine + payment.discount
+					student.save()
 
 
 			data["response"] = "Successfully payment"
