@@ -110,7 +110,14 @@ def student_payment_view(request):
 
 		if serializer.is_valid():
 
-			serializer.save()
+			payment = serializer.save()
+
+			if payment.account :
+				account = payment.account
+				account = account.balance + payment.amount + payment.discount - payment.fine
+				account.save()
+
+
 			data["response"] = "Successfully payment"
 			data["error_message"] = None
 			return Response(data=data)
