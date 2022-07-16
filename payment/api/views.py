@@ -34,6 +34,8 @@ from django.db.models import Q
 
 from rest_framework.exceptions import ValidationError
 
+from decimal import *
+
 
 
 
@@ -121,15 +123,15 @@ def student_payment_view(request):
 					pass
 				elif account.is_staff:
 					staff = Staff.objects.get(account=account)
-					staff.balance = staff.balance + payment.amount - payment.fine + payment.discount
+					staff.balance = Decimal(staff.balance) + Decimal(payment.fee) - Decimal(payment.fine) + Decimal(payment.discount)
 					staff.save()
 				elif account.is_teacher:
 					teacher = Teacher.objects.get(account=account)
-					teacher.balance = teacher.balance + payment.amount - payment.fine + payment.discount
+					teacher.balance = Decimal(Teacher.balance) + Decimal(payment.fee) - Decimal(payment.fine) + Decimal(payment.discount)
 					teacher.save()
 				else: 
 					student = Student.objects.get(account=account)
-					student.balance = student.balance + payment.amount - payment.fine + payment.discount
+					student.balance = Decimal(student.balance) + Decimal(payment.fee) - Decimal(payment.fine) + Decimal(payment.discount)
 					student.save()
 
 
