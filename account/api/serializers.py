@@ -20,6 +20,84 @@ def get_photo_url(self, obj):
 	photo_url = obj.account.profile_picture.url
 	return request.build_absolute_uri(photo_url)
 
+
+
+class AccountResponseSerializer(serializers.ModelSerializer) :
+
+	organization_name 		= serializers.SerializerMethodField("get_organization_name")
+	created_at 				= serializers.SerializerMethodField("get_created_at")
+	updated_at 				= serializers.SerializerMethodField("get_updated_at")
+	balance 				= serializers.SerializerMethodField("get_balance")
+	address 				= serializers.SerializerMethodField("get_address")
+
+	class Meta:
+		model = Account
+		fields = [
+			'pk',
+			'email',
+			'username',
+			'mobile',
+			'profile_picture',
+			'is_admin',
+			'is_staff',
+			'is_teacher',
+			'created_at',
+			'updated_at',
+			'balance',
+
+
+			'organization_name',
+			'address'
+			]
+
+	
+	def get_organization_name(self, obj) :
+		if obj.is_admin :
+			organization = Organization.objects.get(account=obj)
+		elif obj.is_staff:
+			organization = Staff.objects.get(account=obj).organization
+		elif obj.is_teacher:
+			organization = Teacher.objects.get(account=obj).organization
+		else: 
+			organization = Student.objects.get(account=obj).organization
+		return organization.organization_name
+
+	def get_balance(self, obj) :
+		if obj.is_admin :
+			balance = 0.00
+		elif obj.is_staff:
+			balance = Staff.objects.get(account=obj).balance
+		elif obj.is_teacher:
+			balance = Teacher.objects.get(account=obj).balance
+		else: 
+			balance = Student.objects.get(account=obj).balance
+		return balance
+
+
+
+
+	
+	def get_updated_at(self, obj) :
+		return obj.last_login
+
+	
+
+
+	def get_created_at(self, obj) :
+		return obj.date_joined
+
+	
+	def get_address(self, obj) :
+		if obj.is_admin :
+			address = Organization.objects.get(account=obj).address
+		elif obj.is_staff:
+			address = Staff.objects.get(account=obj).address
+		elif obj.is_teacher:
+			address = Teacher.objects.get(account=obj).address
+		else: 
+			address = Student.objects.get(account=obj).address
+		return address
+
 class RegistrationOrganizationSerializer(serializers.ModelSerializer):
 
 	password2 				= serializers.CharField(style={'input_type': 'password'}, write_only=True)
@@ -243,7 +321,12 @@ class BatchSerializer(serializers.ModelSerializer):
 		fields = [
 			"pk",
 			"name",
+
+			"title",
 			"fee",
+			"image",
+			"description",
+			"is_active",
 			"discount",
 			"organization",
 			"created_at",
@@ -258,7 +341,7 @@ class BatchSerializer(serializers.ModelSerializer):
 class StudentRegitrationSerializer(serializers.ModelSerializer):
 
 	password2 				= serializers.CharField(style={'input_type': 'password'}, write_only=True)
-	batch 					= serializers.IntegerField(allow_null=True, required=False)
+	batch 					= serializers.IntegerField(allow_null=False, required=True)
 	address 				= serializers.CharField(required=False)
 	group 					= serializers.CharField(required=False)
 	balance 				= serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
@@ -290,7 +373,10 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 		try:
 			batch = Batch.objects.get(pk = self.validated_data.get("batch", None))
 		except:
-			batch = None
+			data = {}
+			data["response"] = "Error"
+			data["error_message"] = "Batch not found"
+			raise serializers.ValidationError(data)
 		account = Account(
 					email=self.validated_data.get('email', None),
 					username=self.validated_data['username'],
@@ -306,21 +392,13 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 		account.save()
 		
 
-		if batch != None:
-			student = Student(
+		student = Student(
 				account=account,
 				organization = organization,
 				balance = self.validated_data.get("balance", 0.00),
 				batch = batch,
 				address = self.validated_data.get("address", None),
 				group = self.validated_data.get("group", None)
-			)
-		else:
-			student = Student(
-				account=account,
-				organization = organization,
-				balance = self.validated_data.get("balance", 0.00),
-				address = self.validated_data.get("address", None)
 			)
 		student.save()
 		return account
@@ -471,6 +549,7 @@ class UpdateTeacherSerializer(serializers.ModelSerializer):
 class StaffSerializer(serializers.ModelSerializer):
 
 	address 					= serializers.CharField(required=False)
+	account_pk 					= serializers.SerializerMethodField("get_account_pk")
 	email 						= serializers.SerializerMethodField("get_email")
 	mobile 						= serializers.SerializerMethodField("get_mobile")
 	username 					= serializers.SerializerMethodField("get_username")
@@ -481,6 +560,7 @@ class StaffSerializer(serializers.ModelSerializer):
 		model = Staff
 		fields = [
 			'pk',
+			'account_pk',
 			'email',
 			'username',
 			'mobile',
@@ -508,10 +588,18 @@ class StaffSerializer(serializers.ModelSerializer):
 			return None
 
 
+
+
+
+	
+	def get_account_pk(self, obj) :
+		return obj.account.pk
+
+
 class StudentSerializer(serializers.ModelSerializer):
 
 	address 					= serializers.CharField(required=False)
-	# pk 							= serializers.SerializerMethodField("get_pk")
+	account_pk 					= serializers.SerializerMethodField("get_account_pk")
 	email 						= serializers.SerializerMethodField("get_email")
 	mobile 						= serializers.SerializerMethodField("get_mobile")
 	username 					= serializers.SerializerMethodField("get_username")
@@ -524,6 +612,7 @@ class StudentSerializer(serializers.ModelSerializer):
 		model = Student
 		fields = [
 			'pk',
+			'account_pk',
 			'email',
 			'username',
 			'mobile',
@@ -565,16 +654,17 @@ class StudentSerializer(serializers.ModelSerializer):
 	def get_batch_name(self, obj):
 		if obj.batch:
 			return obj.batch.name
-
-
-		
 		else:
 			return None
+
+	def get_account_pk(self, obj) :
+		return obj.account.pk
 
 
 class TeacherSerializer(serializers.ModelSerializer):
 
 	address 					= serializers.CharField(required=False)
+	account_pk 					= serializers.SerializerMethodField("get_account_pk")
 	email 						= serializers.SerializerMethodField("get_email")
 	mobile 						= serializers.SerializerMethodField("get_mobile")
 	username 					= serializers.SerializerMethodField("get_username")
@@ -585,6 +675,14 @@ class TeacherSerializer(serializers.ModelSerializer):
 		model = Teacher
 		fields = [
 			'pk',
+
+
+
+
+
+
+
+			'account_pk',
 			'email',
 			'username',
 			'mobile',
@@ -609,6 +707,11 @@ class TeacherSerializer(serializers.ModelSerializer):
 			return obj.account.profile_picture.url
 		else:
 			return None
+
+
+	
+	def get_account_pk(self, obj) :
+		return obj.account.pk
 
 
 

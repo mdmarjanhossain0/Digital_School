@@ -62,6 +62,15 @@ def profile_picture_location(instance, filename):
 	return file_path
 
 
+def batch_image_location(instance, filename):
+	file_path = '{organization_name}/{batch_name}/{filename}'.format(
+		filename=filename,
+		organization_name = instance.organization.organization_name,
+		batch_name = instance.name
+	)
+	return file_path
+
+
 
 class Account(AbstractBaseUser):
 	email                       = models.EmailField(verbose_name="email", max_length=60, null=True, blank=True)
@@ -97,6 +106,9 @@ class Organization(models.Model):
 	organization_name           = models.CharField(max_length=150, unique=True)
 	address                     = models.CharField(max_length=150, null=True, blank=True)
 
+	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
+	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
+
 
 
 
@@ -115,8 +127,12 @@ class Staff(models.Model):
 
 class Batch(models.Model):
 	organization                = models.ForeignKey(Organization, on_delete=models.CASCADE)
-	name                        = models.CharField(max_length=32, null=False, blank=False)
+	name                        = models.CharField(max_length=100, null=False, blank=False)
+	title 						= models.CharField(max_length=300, default="")
 	fee 						= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+	image 						= models.ImageField(upload_to=batch_image_location, null=True, blank=True)
+	description 				= models.TextField()
+	is_active                   = models.BooleanField(default=True)
 	discount 					= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
@@ -126,9 +142,27 @@ class Student(models.Model):
 	account                     = models.OneToOneField(Account, on_delete=models.CASCADE)
 	organization                = models.ForeignKey(Organization, on_delete=models.CASCADE)
 	balance                     = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-	batch                       = models.ForeignKey(Batch, null=True, blank=True, on_delete=models.SET_NULL)
+	batch                       = models.ForeignKey(Batch, on_delete=models.CASCADE)
 	address                     = models.CharField(max_length=150, null=True, blank=True)
 	group 						= models.CharField(max_length=100, null=True, blank=True)
+
+
+
+	parent_mobile 				= models.CharField(max_length=15)
+	college_name 				= models.CharField(max_length=500, null=True, blank=True)
+
+	hsc_group 					= models.CharField(max_length=50, null=True, blank=True)
+	hsc_year 					= models.CharField(max_length=50, null=True, blank=True)
+	hsc_roll 					= models.CharField(max_length=100, null=True, blank=True)
+	hsc_gpa 					= models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+
+	ssc_group 					= models.CharField(max_length=50, null=True, blank=True)
+	ssc_year 					= models.CharField(max_length=50, null=True, blank=True)
+	ssc_roll 					= models.CharField(max_length=100, null=True, blank=True)
+	ssc_gpa 					= models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+
+	registration_number 		= models.CharField(max_length=100)
+
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
 

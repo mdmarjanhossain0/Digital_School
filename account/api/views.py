@@ -35,9 +35,9 @@ from account.models import (
 )
 
 from academic.models import (
-    Course,
-    Exam,
-    Result
+	Course,
+	Exam,
+	Result
 )
 
 
@@ -52,6 +52,7 @@ from payment.api.serializers import (
 
 
 from account.api.serializers import (
+	AccountResponseSerializer,
 	BatchSerializer,
 	RegistrationOrganizationSerializer,
 	RegistrationStaffSerializer,
@@ -184,23 +185,24 @@ def registration_organization_view(request):
 		
 		if serializer.is_valid():
 			account = serializer.save()
+			data = AccountResponseSerializer(account).data
 			data['response'] = 'successfully registered new user.'
 
-			data['email'] = account.email
-			data['username'] = account.username
-			data['pk'] = account.pk
-			data["mobile"] = account.mobile
-			data["is_admin"] = True
-			data["is_staff"] = True
-			data["is_teacher"] = account.is_teacher
+			# data['email'] = account.email
+			# data['username'] = account.username
+			# data['pk'] = account.pk
+			# data["mobile"] = account.mobile
+			# data["is_admin"] = True
+			# data["is_staff"] = True
+			# data["is_teacher"] = account.is_teacher
 
-			data["balance"] = 0.00
-			data["created_at"] = account.date_joined
-			data["updated_at"] = account.last_login
+			# data["balance"] = 0.00
+			# data["created_at"] = account.date_joined
+			# data["updated_at"] = account.last_login
 			
 
-			data["organization_name"] = serializer.data.get("organization_name", None)
-			data["address"] = serializer.data.get("address", None)
+			# data["organization_name"] = serializer.data.get("organization_name", None)
+			# data["address"] = serializer.data.get("address", None)
 			
 			token = Token.objects.get(user=account).key
 			data['token'] = token
@@ -240,22 +242,23 @@ def update_organization_view(request, pk):
 		
 		if serializer.is_valid():
 			account = serializer.save()
+			data = AccountResponseSerializer(account).data
 			data['response'] = 'successfully registered new user.'
 
-			data['email'] = account.email
-			data['username'] = account.username
-			data['pk'] = account.pk
-			data["mobile"] = account.mobile
-			data["is_admin"] = True
-			data["is_staff"] = True
-			data["is_teacher"] = account.is_teacher
-			data["balance"] = 0.00
-			data["created_at"] = account.date_joined
-			data["updated_at"] = account.last_login
+			# data['email'] = account.email
+			# data['username'] = account.username
+			# data['pk'] = account.pk
+			# data["mobile"] = account.mobile
+			# data["is_admin"] = True
+			# data["is_staff"] = True
+			# data["is_teacher"] = account.is_teacher
+			# data["balance"] = 0.00
+			# data["created_at"] = account.date_joined
+			# data["updated_at"] = account.last_login
 			
 
-			data["organization_name"] = serializer.data.get("organization_name", None)
-			data["address"] = serializer.data.get("address", None)
+			# data["organization_name"] = serializer.data.get("organization_name", None)
+			# data["address"] = serializer.data.get("address", None)
 			
 			token = Token.objects.get(user=account).key
 			data['token'] = token
@@ -679,12 +682,23 @@ def update_teacher_view(request, pk):
 	if request.method == 'PUT':
 		data = {}
 		try:
-			instance = Account.objects.get(pk=pk)
+			teacher = Teacher.objects.get(pk=pk)
+			print(teacher)
+			instance = teacher.account
 		except:
 			data["response"] = "Error"
 			data["error_message"] = "not found"
 			return Response(data=data, status=404)
+		
 
+
+
+		username = request.data.get('username', '0')
+		if instance.username != username and validate_username(username) != None:
+			data['error_message'] = 'That username is already in use.'
+			data['response'] = 'Error'
+			return Response(data)
+			
 		email = request.data.get('email', '0').lower()
 		if instance.email != email and validate_email(email) != None:
 			data['error_message'] = 'That email is already in use.'
@@ -698,30 +712,26 @@ def update_teacher_view(request, pk):
 			data['response'] = 'Error'
 			return Response(data)
 
-		username = request.data.get('username', '0')
-		if instance.username != username and validate_username(username) != None:
-			data['error_message'] = 'That username is already in use.'
-			data['response'] = 'Error'
-			return Response(data)
-
 		serializer = UpdateTeacherSerializer(data=request.data, instance=instance)
 		
 		if serializer.is_valid():
 			account = serializer.save()
-			data['response'] = 'successfully registered new user.'
+			teacher = Teacher.objects.get(account=account)
+			data = TeacherSerializer(teacher).data
+			# data['response'] = 'successfully registered new user.'
 
-			data['email'] = account.email
-			data['username'] = account.username
-			data['pk'] = account.pk
-			data["mobile"] = account.mobile
-			data["balance"] = 0.00
-			data["created_at"] = account.date_joined
-			data["updated_at"] = account.last_login
+			# data['email'] = account.email
+			# data['username'] = account.username
+			# data['pk'] = account.pk
+			# data["mobile"] = account.mobile
+			# data["balance"] = 0.00
+			# data["created_at"] = account.date_joined
+			# data["updated_at"] = account.last_login
 
-			data["address"] = serializer.data.get("address", None)
+			# data["address"] = serializer.data.get("address", None)
 			
-			token = Token.objects.get(user=account).key
-			data['token'] = token
+			# token = Token.objects.get(user=account).key
+			# data['token'] = token
 		else:
 			data = serializer.errors
 		return Response(data)
@@ -731,12 +741,12 @@ def update_teacher_view(request, pk):
 
 
 class StaffFilter(django_filters.FilterSet):
-    username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
-    mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
-    pk = django_filters.CharFilter(lookup_expr='exact')
-    class Meta:
-        model= Staff
-        fields = ["pk", "username", 'mobile']
+	username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+	mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
+	pk = django_filters.CharFilter(lookup_expr='exact')
+	class Meta:
+		model= Staff
+		fields = ["pk", "username", 'mobile']
 
 class ApiStaffListView(ListAPIView):
 	serializer_class = StaffSerializer
@@ -757,17 +767,17 @@ class ApiStaffListView(ListAPIView):
 		else: 
 			organization = Student.objects.get(account=user).organization
 
-		return Staff.objects.filter(organization=organization)
+		return Staff.objects.filter(organization=organization).order_by("-pk")
 			
 
 
 class StudentFilter(django_filters.FilterSet):
-    username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
-    mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
-    pk = django_filters.CharFilter(lookup_expr='exact')
-    class Meta:
-        model= Student
-        fields = ["pk", "username", 'mobile']
+	username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+	mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
+	pk = django_filters.CharFilter(lookup_expr='exact')
+	class Meta:
+		model= Student
+		fields = ["pk", "username", 'mobile']
 
 class ApiStudentListView(ListAPIView):
 	serializer_class = StudentSerializer
@@ -788,17 +798,17 @@ class ApiStudentListView(ListAPIView):
 		else: 
 			organization = Student.objects.get(account=user).organization
 
-		return Student.objects.filter(organization=organization)
+		return Student.objects.filter(organization=organization).order_by("-pk")
 
 
 
 class TeacherFilter(django_filters.FilterSet):
-    username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
-    mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
-    pk = django_filters.CharFilter(lookup_expr='exact')
-    class Meta:
-        model= Teacher
-        fields = ["pk", "username", 'mobile']
+	username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+	mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
+	pk = django_filters.CharFilter(lookup_expr='exact')
+	class Meta:
+		model= Teacher
+		fields = ["pk", "username", 'mobile']
 
 class ApiTeacherListView(ListAPIView):
 	serializer_class = TeacherSerializer
@@ -819,7 +829,7 @@ class ApiTeacherListView(ListAPIView):
 		else: 
 			organization = Student.objects.get(account=user).organization
 
-		return Teacher.objects.filter(organization=organization)
+		return Teacher.objects.filter(organization=organization).order_by("-pk")
 
 class ApiBatchListView(ListAPIView):
 	serializer_class = BatchSerializer
@@ -841,7 +851,7 @@ class ApiBatchListView(ListAPIView):
 		else: 
 			organization = Student.objects.get(account=user).organization
 
-		return Batch.objects.filter(organization=organization)
+		return Batch.objects.filter(organization=organization).order_by("-pk")
 
 
 
@@ -1056,6 +1066,11 @@ def create_batch_view(request):
 def update_batch_view(request, pk):
 
 	if request.method == 'PUT':
+
+
+
+
+		print(request.data)
 		data = {}
 		instance = Batch.objects.get(pk=pk)
 		serializer = BatchSerializer(data=request.data, instance=instance, partial=True)
