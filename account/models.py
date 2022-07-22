@@ -154,12 +154,12 @@ class Student(models.Model):
 	hsc_group 					= models.CharField(max_length=50, null=True, blank=True)
 	hsc_year 					= models.CharField(max_length=50, null=True, blank=True)
 	hsc_roll 					= models.CharField(max_length=100, null=True, blank=True)
-	hsc_gpa 					= models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+	hsc_gpa 					= models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=0.00)
 
 	ssc_group 					= models.CharField(max_length=50, null=True, blank=True)
 	ssc_year 					= models.CharField(max_length=50, null=True, blank=True)
 	ssc_roll 					= models.CharField(max_length=100, null=True, blank=True)
-	ssc_gpa 					= models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+	ssc_gpa 					= models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=0.00)
 
 	registration_number 		= models.CharField(max_length=100)
 

@@ -346,6 +346,21 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 	group 					= serializers.CharField(required=False)
 	balance 				= serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
 
+	parent_mobile 			= serializers.CharField(allow_null=False, required=True)
+	registration_number 	= serializers.CharField(allow_null=False, required=True)
+
+	hsc_group 				= serializers.CharField(required=False)
+	hsc_year 				= serializers.CharField(required=False)
+	hsc_roll 				= serializers.CharField(required=False)
+	hsc_gpa 				= serializers.CharField(required=False)
+
+	ssc_group 				= serializers.CharField(required=False)
+	ssc_year 				= serializers.CharField(required=False)
+	ssc_roll 				= serializers.CharField(required=False)
+	ssc_gpa 				= serializers.CharField(required=False)
+	
+	
+
 	class Meta:
 		model = Account
 		fields = [
@@ -360,7 +375,20 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 			'balance',
 			'batch',
 			'address',
-			"group"
+			"group",
+
+			"parent_mobile",
+			"registration_number",
+
+			"hsc_group",
+			"hsc_year",
+			"hsc_roll",
+			"hsc_gpa",
+
+			"ssc_group",
+			"ssc_year",
+			"ssc_roll",
+			"ssc_gpa"	
 			]
 		extra_kwargs = {
 				'password': {'write_only': True},
@@ -377,6 +405,31 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 			data["response"] = "Error"
 			data["error_message"] = "Batch not found"
 			raise serializers.ValidationError(data)
+
+		parent_mobile = self.validated_data.get("parent_mobile", None)
+		if not parent_mobile :
+			data = {}
+			data["response"] = "Error"
+			data["error_message"] = "Parent mobile required"
+			raise serializers.ValidationError(data)
+
+		registration_number = self.validated_data.get("registration_number", None)
+		if not registration_number :
+			data = {}
+			data["response"] = "Error"
+			data["error_message"] = "Registration number required"
+			raise serializers.ValidationError(data)
+		
+		hsc_group = self.validated_data.get("hsc_group", None)
+		hsc_year = self.validated_data.get("hsc_year", None)
+		hsc_roll = self.validated_data.get("hsc_roll", None)
+		hsc_gpa = self.validated_data.get("hsc_gpa", None)
+
+		ssc_group = self.validated_data.get("ssc_group", None)
+		ssc_year = self.validated_data.get("ssc_year", None)
+		ssc_roll = self.validated_data.get("ssc_roll", None)
+		ssc_gpa = self.validated_data.get("ssc_gpa", None)
+
 		account = Account(
 					email=self.validated_data.get('email', None),
 					username=self.validated_data['username'],
@@ -398,7 +451,17 @@ class StudentRegitrationSerializer(serializers.ModelSerializer):
 				balance = self.validated_data.get("balance", 0.00),
 				batch = batch,
 				address = self.validated_data.get("address", None),
-				group = self.validated_data.get("group", None)
+				group = self.validated_data.get("group", None),
+				parent_mobile = parent_mobile,
+				registration_number = registration_number,
+				hsc_group = hsc_group,
+				hsc_year = hsc_year,
+				hsc_roll = hsc_roll,
+				hsc_gpa = hsc_gpa,
+				ssc_group = ssc_group,
+				ssc_year = ssc_year,
+				ssc_roll = ssc_roll,
+				ssc_gpa = ssc_gpa
 			)
 		student.save()
 		return account
@@ -413,6 +476,21 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
 	address 				= serializers.CharField(required=False)
 	group 					= serializers.CharField(required=False)
 
+
+	parent_mobile 			= serializers.CharField(allow_null=False, required=True)
+	registration_number 	= serializers.CharField(allow_null=False, required=True)
+
+	hsc_group 				= serializers.CharField(required=False)
+	hsc_year 				= serializers.CharField(required=False)
+	hsc_roll 				= serializers.CharField(required=False)
+	hsc_gpa 				= serializers.CharField(required=False)
+
+	ssc_group 				= serializers.CharField(required=False)
+	ssc_year 				= serializers.CharField(required=False)
+	ssc_roll 				= serializers.CharField(required=False)
+	ssc_gpa 				= serializers.CharField(required=False)
+	
+
 	class Meta:
 		model = Account
 		fields = [
@@ -420,9 +498,25 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
 			'username',
 			'mobile',
 			'profile_picture',
+			
 			'batch',
 			'address',
-			"group"
+			"group",
+
+
+
+			"parent_mobile",
+			"registration_number",
+
+			"hsc_group",
+			"hsc_year",
+			"hsc_roll",
+			"hsc_gpa",
+
+			"ssc_group",
+			"ssc_year",
+			"ssc_roll",
+			"ssc_gpa"
 			]	
 
 	def update(self, instance, validated_data):
@@ -439,6 +533,34 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
 				student.batch = Batch.objects.get(pk=batch_pk)
 			else:
 				raise serializers.ValidationError({'response': 'Error', "error_message": "batch not found"})
+
+		parent_mobile = validated_data.get("parent_mobile", None)
+		if not parent_mobile :
+			data = {}
+			data["response"] = "Error"
+			data["error_message"] = "Parent mobile required"
+			raise serializers.ValidationError(data)
+		student.parent_mobile = parent_mobile
+
+		registration_number = validated_data.get("registration_number", None)
+		if not registration_number :
+			data = {}
+			data["response"] = "Error"
+			data["error_message"] = "Registration number required"
+			raise serializers.ValidationError(data)
+		
+
+		student.registration_number = registration_number
+		
+		student.hsc_group = validated_data.get("hsc_group", student.hsc_group)
+		student.hsc_year = validated_data.get("hsc_year", student.hsc_year)
+		student.hsc_roll = validated_data.get("hsc_roll", student.hsc_roll)
+		student.hsc_gpa = validated_data.get("hsc_gpa", student.hsc_gpa)
+
+		student.ssc_group = validated_data.get("ssc_group", student.ssc_group)
+		student.ssc_year = validated_data.get("ssc_year", student.ssc_year)
+		student.ssc_roll = validated_data.get("ssc_roll", student.ssc_roll)
+		student.ssc_gpa = validated_data.get("ssc_gpa", student.ssc_gpa)
 			
 		student.address = validated_data.get("address", student.address)
 		student.group = validated_data.get("group", student.group)
@@ -623,6 +745,20 @@ class StudentSerializer(serializers.ModelSerializer):
 			"batch_name",
 			"is_active",
 			"group",
+
+			"parent_mobile",
+			"registration_number",
+
+			"hsc_group",
+			"hsc_year",
+			"hsc_roll",
+			"hsc_gpa",
+
+			"ssc_group",
+			"ssc_year",
+			"ssc_roll",
+			"ssc_gpa",
+
 			'created_at',
 			'updated_at'
 			]

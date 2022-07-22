@@ -24,6 +24,13 @@ from django.db.models import Sum
 from rest_framework.exceptions import ValidationError
 
 
+import os
+from django.conf import settings
+from django.core.files.storage import default_storage
+from django.core.files.storage import FileSystemStorage
+
+
+
 
 from academic.models import (
 	Course,
@@ -306,7 +313,6 @@ def check_header_course(list, item):
 	for x in list:
 		if x["pk"] == item:
 			exist = True
-			print("exitsldkflsdfljk")
 			break
 	
 	return exist
@@ -314,13 +320,19 @@ def check_header_course(list, item):
 @permission_classes((IsAuthenticated,))
 def create_result_csv_view(request, pk):
 	if request.method == "POST" :
+		print(request.data)
 
 		data = {}
 		file = request.data.get("file", None)
 		count = 0
 		error_message = ""
 		if file :
-			
+		
+			# csv_reader = csv.DictReader(codecs.iterdecode(file, 'utf-8'))
+
+			# for x in csv_reader :
+			# 	if x["roll"] :
+			# 		print(x)
 
 			data = {}
 			user = request.user
@@ -344,56 +356,57 @@ def create_result_csv_view(request, pk):
 					course_list.append(details)
 				print(course_list)
 			except:
+				print("course not found")
 				data = {}
 				data["response"] = "Error"
-				data["error_message"] = "Not found"
-				return Response(data=data, status=404)
+				data["error_message"] = "Not accepted"
+				return Response(data=data)
 
 			try :
 				header = next(csv.reader(codecs.iterdecode(file, 'utf-8')), None)
-				if len(header) - 1 == len(course_list):
-					for x in header[1:]:
+				if len(header) - 2 == len(course_list):
+					print("valid header with ", header[2:])
+					for x in header[2:]:
 						pk = x.split(",")[0]
-						# print(pk)
+						print(pk)
 						if not check_header_course(course_list, int(pk)):
 							data = {}
 							data["response"] = "Error"
-							data["error_message"] = "Course not found"
-							return Response(data=data, status=404)
-
-						
+							data["error_message"] = "Not valid csv file. Course not found"
+							return Response(data=data)	
 				else:
 					data = {}
 					data["response"] = "Error"
-					data["error_message"] = "dlskf"
-					return Response(data=data, status=404)
+					data["error_message"] = "Not valid csv file."
+					return Response(data=data)
 				csv_reader = csv.DictReader(codecs.iterdecode(file, 'utf-8'))
 
 				result_list = []
 				for row in csv_reader:
-					count = count + 1
-					print(row)
-					item = {}
-					item["organization"] = organization.pk
-					item["student"] = row["roll"]
-					item["exam"] = exam.pk
-					for x in header[1:]:
+					roll = row["roll"] 
+					if roll:						
+						count = count + 1
+						print("row ", row)
 						item = {}
 						item["organization"] = organization.pk
-						item["student"] = row["roll"]
+						item["student"] = roll
+						item["batch"] = exam.batch.pk
 						item["exam"] = exam.pk
-						pk = x.split(",")[0]
-						print(int(pk))
-						item["course"] = int(pk)
-						item["mark"] = row[x]
+						for x in header[2:]:
+							# print("down header ", header[1:])
+							item = {}
+							item["organization"] = organization.pk
+							item["student"] = roll
+							item["batch"] = exam.batch.pk
+							item["exam"] = exam.pk
+							pk = x.split(",")[0]
+							print(int(pk))
+							item["course"] = int(pk)
+							item["mark"] = row[x]
+							print("item ",item)
+							result_list.append(item)
 
-						result_list.append(item)
-
-
-
-
-
-				print(result_list)
+				print("result list ", result_list)
 				serializer = ResultSerializer(data=result_list, many=True)
 
 				if serializer.is_valid():
@@ -404,24 +417,89 @@ def create_result_csv_view(request, pk):
 					return Response(data=data)
 				else:
 					data["response"] = "Error"
-
 					data["error_message"] = serializer.errors
-
-
-
-
-
-
-
 					return Response(data=data, status=400)
 			except :
 				data['response'] = ""
 				data['error_message'] = "CSV doesn't accepted"
-				return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+				return Response(data=data)
 		else :
 			data['response'] = ""
 			data['error_message'] = "CSV file is required."
 			return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['GET'])
+@permission_classes((IsAuthenticated,))
+def create_result_blank_csv_view(request, pk):
+
+	if request.method == 'GET':
+		data = {}
+		user = request.user
+		if user.is_admin :
+				organization = Organization.objects.get(account=user)
+		elif user.is_staff:
+				organization = Staff.objects.get(account=user).organization
+		else:
+				data["response"] = "Permission denied"
+				data["error_message"] = "You cann't create result"
+				return Response(data=data, status=403)
+
+		try:
+				exam = Exam.objects.get(pk=pk)
+				print(exam)
+				course_list = []
+				for x in exam.courses.all():
+					details = {}
+					details["name"] = x.name
+					details["pk"] = x.pk
+					course_list.append(details)
+				print(course_list)
+		except:
+				print("course not found")
+				data = {}
+				data["response"] = "Error"
+				data["error_message"] = "Not Found"
+				return Response(data=data)
+
+		if True:
+			file_path = 'csv/{organization_name}/{exam_name_with_pk}'.format(
+				organization_name=organization.organization_name,
+				exam_name_with_pk = exam.name + str(exam.pk)
+					) 
+			url = os.path.join(settings.MEDIA_ROOT , str(file_path))
+			storage = FileSystemStorage(location=url)
+			print(storage)
+			if storage.exists(url) :
+				print("Exist")
+			else :
+				print("Not Exist")
+				os.makedirs(url)
+			header = ["name", "roll"]
+			for x in course_list :
+				data = str(x["pk"]) + ", " + x["name"]
+				header.append(data)
+			print("header ", header)
+			with storage.open('exam.csv', 'w+') as destination:
+				writer = csv.DictWriter(destination, fieldnames=header)
+				writer.writeheader()
+				for row in Student.objects.filter(batch=exam.batch):
+					# data = [row.account.username, row.pk]
+					data = {}
+					data["name"] = row.account.username
+					data["roll"] = row.pk
+					for x in header[2:] :
+						print(x)
+						data[x] = ""
+
+					
+					print(data)
+					writer.writerow(data)
+			return Response(data={"response" : request.build_absolute_uri(storage.url(file_path + "/exam.csv"))})
+		# except :
+		# 	return Response(data={"response" : "User not found"})
+
 
 
 

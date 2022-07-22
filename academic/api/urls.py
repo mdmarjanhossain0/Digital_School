@@ -23,7 +23,10 @@ from academic.api.views import(
 	create_result_csv_view,
 
 
-	delete_exam_view
+	delete_exam_view,
+
+
+	create_result_blank_csv_view
 	) 
 
 app_name='academic'
@@ -33,6 +36,7 @@ urlpatterns = [
 	path("exam/create", create_exam_view, name=""),
 	path("result/create", create_result_view, name=""),
 	path("result/create/csv/<pk>", create_result_csv_view, name=""),
+	path("result/create/csv/<pk>/blank", create_result_blank_csv_view, name=""),
 
 	path("course/update/<pk>", update_course_view, name=""),
 	path("exam/update/<pk>", update_exam_view, name=""),

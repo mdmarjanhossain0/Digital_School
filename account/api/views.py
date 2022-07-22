@@ -777,7 +777,7 @@ class StudentFilter(django_filters.FilterSet):
 	pk = django_filters.CharFilter(lookup_expr='exact')
 	class Meta:
 		model= Student
-		fields = ["pk", "username", 'mobile']
+		fields = ["pk", "username", 'mobile', 'batch']
 
 class ApiStudentListView(ListAPIView):
 	serializer_class = StudentSerializer
