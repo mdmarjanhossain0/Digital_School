@@ -19,6 +19,11 @@ from django.conf.urls.static import static
 from django.conf import settings
 from django.conf import settings
 
+
+
+
+BASE_URL = "http://167.99.44.193"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 

@@ -5,8 +5,14 @@ from notification.models import (
 	Notification
 )
 
-
 from rest_framework.exceptions import ValidationError
+
+
+
+
+
+
+from Digital_School.urls import BASE_URL
 
 class CreateNotificationSerializer(serializers.ModelSerializer) :
 
@@ -24,8 +30,9 @@ class CreateNotificationSerializer(serializers.ModelSerializer) :
 class NotificationSerializer(serializers.ModelSerializer) :
 
 	is_read                     = serializers.SerializerMethodField("get_is_read")
-	class Meta :
+	image 						= serializers.SerializerMethodField("get_image")
 
+	class Meta :
 		model = Notification
 		fields = [
 			"pk",
@@ -55,3 +62,10 @@ class NotificationSerializer(serializers.ModelSerializer) :
 			# data["response"] = "Error"
 			# data["error_message"] = "Unauthenticated"
 			# raise ValidationError(data)
+
+
+	def get_image(self, obj) :
+		if obj.image :
+			return BASE_URL + obj.image.url
+		else :
+			return None

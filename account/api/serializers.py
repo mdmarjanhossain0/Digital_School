@@ -9,9 +9,10 @@ from account.models import (
 	Teacher
 )
 
-
-
 from rest_framework.authtoken.models import Token
+
+
+from Digital_School.urls import BASE_URL
 
 
 #This is the magic function which does the work
@@ -29,6 +30,7 @@ class AccountResponseSerializer(serializers.ModelSerializer) :
 	updated_at 				= serializers.SerializerMethodField("get_updated_at")
 	balance 				= serializers.SerializerMethodField("get_balance")
 	address 				= serializers.SerializerMethodField("get_address")
+	profile_picture 		= serializers.SerializerMethodField("get_profile_picture")
 
 	class Meta:
 		model = Account
@@ -73,20 +75,13 @@ class AccountResponseSerializer(serializers.ModelSerializer) :
 			balance = Student.objects.get(account=obj).balance
 		return balance
 
-
-
-
-	
 	def get_updated_at(self, obj) :
 		return obj.last_login
 
 	
-
-
 	def get_created_at(self, obj) :
 		return obj.date_joined
 
-	
 	def get_address(self, obj) :
 		if obj.is_admin :
 			address = Organization.objects.get(account=obj).address
@@ -97,6 +92,12 @@ class AccountResponseSerializer(serializers.ModelSerializer) :
 		else: 
 			address = Student.objects.get(account=obj).address
 		return address
+
+	def get_profile_picture(self, obj) :
+		if obj.profile_picture:
+			return BASE_URL + obj.profile_picture
+		else :
+			return None
 
 class RegistrationOrganizationSerializer(serializers.ModelSerializer):
 
@@ -476,7 +477,6 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
 	address 				= serializers.CharField(required=False)
 	group 					= serializers.CharField(required=False)
 
-
 	parent_mobile 			= serializers.CharField(allow_null=False, required=True)
 	registration_number 	= serializers.CharField(allow_null=False, required=True)
 
@@ -566,8 +566,6 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
 		student.group = validated_data.get("group", student.group)
 		student.save()
 		
-
-
 		instance.save()
 		return instance
 
@@ -705,7 +703,7 @@ class StaffSerializer(serializers.ModelSerializer):
 	def get_profile_picture(self, obj):
 		if obj.account.profile_picture:
 			# return get_photo_url(self, obj)
-			return obj.account.profile_picture.url
+			return BASE_URL + obj.account.profile_picture.url
 		else:
 			return None
 
@@ -778,9 +776,7 @@ class StudentSerializer(serializers.ModelSerializer):
 	def get_profile_picture(self, obj):
 		if obj.account.profile_picture:
 			# return get_photo_url(self, obj)
-
-
-			return obj.account.profile_picture.url
+			return BASE_URL + obj.account.profile_picture.url
 		else:
 			return None
 	
@@ -811,13 +807,6 @@ class TeacherSerializer(serializers.ModelSerializer):
 		model = Teacher
 		fields = [
 			'pk',
-
-
-
-
-
-
-
 			'account_pk',
 			'email',
 			'username',
@@ -840,7 +829,7 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 	def get_profile_picture(self, obj):
 		if obj.account.profile_picture:
-			return obj.account.profile_picture.url
+			return BASE_URL + obj.account.profile_picture.url
 		else:
 			return None
 
