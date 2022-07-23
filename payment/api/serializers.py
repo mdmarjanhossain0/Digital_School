@@ -31,6 +31,7 @@ from payment.models import (
 class PaymentSerializer(serializers.ModelSerializer):
 
 	username = serializers.SerializerMethodField("get_username")
+	mobile = serializers.SerializerMethodField("get_mobile")
 
 	class Meta:
 
@@ -47,7 +48,8 @@ class PaymentSerializer(serializers.ModelSerializer):
 			"discount",
 			"created_at",
 			"updated_at",
-			 "username"
+			 "username",
+			 "mobile",
 			 ]
 
 	def get_username(self, obj):
@@ -55,4 +57,13 @@ class PaymentSerializer(serializers.ModelSerializer):
 			return obj.account.username
 		else:
 			return None
-		
+
+
+
+
+
+	def get_mobile(self, obj):
+		if obj.account:
+			return obj.account.mobile
+		else:
+			return None
