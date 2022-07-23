@@ -446,7 +446,7 @@ def registration_student_view(request):
 		print(request.data)
 		data = {}
 		email = request.data.get('email', '0').lower()
-		if validate_email(email) != None:
+		if email != None and email != '' and validate_email(email) != None:
 			data['error_message'] = 'That email is already in use.'
 			data['response'] = 'Error'
 			return Response(data)
