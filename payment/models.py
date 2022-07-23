@@ -41,5 +41,6 @@ class Payments(models.Model):
 	fee 	                 	= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 	fine 						= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 	discount 					= models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+	# payment_by 					= models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True)
 	created_at                  = models.DateTimeField(verbose_name="created_at", auto_now_add=True)
 	updated_at                  = models.DateTimeField(verbose_name="updated_at", auto_now=True)
