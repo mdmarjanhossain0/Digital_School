@@ -263,7 +263,7 @@ class ApiExamListView(ListAPIView):
 			data["error_message"] = "Permission denied"
 			raise ValidationError(data)
 
-		return Exam.objects.filter(organization=organization)
+		return Exam.objects.filter(organization=organization).order_by("-pk")
 
 
 
