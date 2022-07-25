@@ -103,6 +103,7 @@ class ObtainAuthTokenView(APIView):
 
 	def post(self, request):
 		context = {}
+		print(request.data)
 
 		mobile = request.POST.get('username')
 		password = request.POST.get('password')

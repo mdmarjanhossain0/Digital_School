@@ -2,18 +2,19 @@ from pathlib import Path
 
 import os
 
+from decouple import config
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-su$m*p6^5^25=s1ebl_1vrf(f24i2#plfr7$d)i95pn#g7km7&'
+SECRET_KEY = config("SECRET_KEY")
+DEBUG = config("DEBUG", default=True, cast=bool)
 
-DEBUG = True
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # 
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["167.99.44.193", 'tushers-care.com', 'localhost']
 
 
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -25,13 +26,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'phonenumber_field',
+    'corsheaders',
     'django_filters',
-
-
-
-
-
-
 
     'account',
     'academic',
@@ -52,13 +48,14 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-        "PAGE_SIZE": 20,
+        "PAGE_SIZE": 50,
     'DATETIME_FORMAT': "%d/%m/%Y %H:%M:%S",
 }
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -90,12 +87,25 @@ WSGI_APPLICATION = 'Digital_School.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': config("DATABASE_NAME"),
+                'USER': config("DATABASE_USER"),
+                'PASSWORD': config("PASSWORD"),
+                'HOST': config("HOST"),
+                'PORT': '',
+                'TIME_ZONE': 'Asia/Dhaka'
+            }
+        }
 
 
 # Password validation
@@ -161,7 +171,7 @@ EMAIL_HOST_USER = "fff147570@gmail.com"
 EMAIL_HOST_PASSWORD = 'uizxqrlhtnmttirw'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'Digital Pharmachy Team'
+DEFAULT_FROM_EMAIL = 'Tushers Care Team'
 
 
 
