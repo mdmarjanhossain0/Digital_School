@@ -382,7 +382,8 @@ def update_staff_view(request, pk):
 	if request.method == 'PUT':
 		data = {}
 		try:
-			instance = Account.objects.get(pk=pk)
+			staff = Staff.objects.get(pk=pk)
+			instance = staff.account
 		except:
 			data["response"] = "Error"
 			data["error_message"] = "not found"
@@ -391,6 +392,12 @@ def update_staff_view(request, pk):
 
 
 
+		username = request.data.get('username', '0')
+		if instance.username != username and validate_username(username) != None:
+			data['error_message'] = 'That username is already in use.'
+			data['response'] = 'Error'
+			return Response(data)
+			
 		email = request.data.get('email', '0').lower()
 		if instance.email != email and validate_email(email) != None:
 			data['error_message'] = 'That email is already in use.'
@@ -404,34 +411,32 @@ def update_staff_view(request, pk):
 			data['response'] = 'Error'
 			return Response(data)
 
-		username = request.data.get('username', '0')
-		if instance.username != username and validate_username(username) != None:
-			data['error_message'] = 'That username is already in use.'
-			data['response'] = 'Error'
-			return Response(data)
+		print(instance)
 
 
 		serializer = UpdateStaffSerializer(data=request.data, instance=instance)
 		
 		if serializer.is_valid():
 			account = serializer.save()
+			staff = Staff.objects.get(account=account)
+			data = StaffSerializer(staff).data
 			data['response'] = 'successfully registered new user.'
 
-			data['email'] = account.email
-			data['username'] = account.username
-			data['pk'] = account.pk
-			data["mobile"] = account.mobile
-			data["is_admin"] = False
-			data["is_staff"] = True
-			data["is_teacher"] = account.is_teacher
-			data["balance"] = 0.00
-			data["created_at"] = account.date_joined
-			data["updated_at"] = account.last_login
+			# data['email'] = account.email
+			# data['username'] = account.username
+			# data['pk'] = account.pk
+			# data["mobile"] = account.mobile
+			# data["is_admin"] = False
+			# data["is_staff"] = True
+			# data["is_teacher"] = account.is_teacher
+			# data["balance"] = 0.00
+			# data["created_at"] = account.date_joined
+			# data["updated_at"] = account.last_login
 
-			data["address"] = serializer.data.get("address", None)
+			# data["address"] = serializer.data.get("address", None)
 
-			token = Token.objects.get(user=account).key
-			data['token'] = token
+			# token = Token.objects.get(user=account).key
+			# data['token'] = token
 		else:
 			data = serializer.errors
 		return Response(data)
