@@ -985,8 +985,7 @@ def delete_teacher_view(request, pk):
 def staff_details_view(request, pk):
 
 	try:
-		account = Account.objects.get(pk=pk)
-		staff = Staff.objects.get(account=account)
+		staff = Staff.objects.get(pk=pk)
 	except Account.DoesNotExist:
 		return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -1017,8 +1016,7 @@ def student_details_view(request, pk):
 def teacher_details_view(request, pk):
 
 	try:
-		account = Account.objects.get(pk=pk)
-		teacher = Teacher.objects.get(account=account)
+		teacher = Teacher.objects.get(pk=pk)
 	except Account.DoesNotExist:
 		return Response(status=status.HTTP_404_NOT_FOUND)
 
