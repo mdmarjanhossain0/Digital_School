@@ -144,7 +144,7 @@ class ObtainAuthTokenView(APIView):
 			context["balance"] = balance
 			context["created_at"] = account.date_joined
 			context["updated_at"] = account.last_login
-      if account.profile_picture:
+			if account.profile_picture:
 				context["profile_picture"] = get_photo_url(request, account.profile_picture)
 			else : 
 				context["profile_picture"] = None
@@ -795,7 +795,7 @@ class ApiStudentListView(ListAPIView):
 	permission_classes = {IsAuthenticated}
 	pagination_classes = PageNumberPagination
 	filter_class = StudentFilter
-	filter_backends = (DjangoFilterBackend, OrderingFilter,)
+	filter_backends = (SearchFilter, OrderingFilter, DjangoFilterBackend)
 
 	def get_queryset(self):
 		user = self.request.user
