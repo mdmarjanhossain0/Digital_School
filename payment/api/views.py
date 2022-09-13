@@ -127,7 +127,7 @@ def student_payment_view(request):
 					staff.save()
 				elif account.is_teacher:
 					teacher = Teacher.objects.get(account=account)
-					teacher.balance = Decimal(Teacher.balance) + Decimal(payment.fee) - Decimal(payment.fine) + Decimal(payment.discount)
+					teacher.balance = Decimal(teacher.balance) + Decimal(payment.fee) - Decimal(payment.fine) + Decimal(payment.discount)
 					teacher.save()
 				else: 
 					student = Student.objects.get(account=account)

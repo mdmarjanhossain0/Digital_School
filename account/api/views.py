@@ -144,6 +144,10 @@ class ObtainAuthTokenView(APIView):
 			context["balance"] = balance
 			context["created_at"] = account.date_joined
 			context["updated_at"] = account.last_login
+      if account.profile_picture:
+				context["profile_picture"] = get_photo_url(request, account.profile_picture)
+			else : 
+				context["profile_picture"] = None
 			
 
 			context["organization_name"] = organization.organization_name
@@ -747,7 +751,7 @@ def update_teacher_view(request, pk):
 
 
 class StaffFilter(django_filters.FilterSet):
-	username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+	username = django_filters.CharFilter(field_name='account__username', lookup_expr='istartswith')
 	mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
 	pk = django_filters.CharFilter(lookup_expr='exact')
 	class Meta:
@@ -778,7 +782,7 @@ class ApiStaffListView(ListAPIView):
 
 
 class StudentFilter(django_filters.FilterSet):
-	username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+	username = django_filters.CharFilter(field_name='account__username', lookup_expr='istartswith')
 	mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
 	pk = django_filters.CharFilter(lookup_expr='exact')
 	class Meta:
@@ -809,7 +813,7 @@ class ApiStudentListView(ListAPIView):
 
 
 class TeacherFilter(django_filters.FilterSet):
-	username = django_filters.CharFilter(field_name='account__username', lookup_expr='startswith')
+	username = django_filters.CharFilter(field_name='account__username', lookup_expr='istartswith')
 	mobile= django_filters.CharFilter(field_name='account__mobile', lookup_expr='startswith')
 	pk = django_filters.CharFilter(lookup_expr='exact')
 	class Meta:
