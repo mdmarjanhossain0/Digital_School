@@ -665,6 +665,56 @@ def create_student_set(list):
 
 @api_view(['GET', ])
 @permission_classes((IsAuthenticated,))
+def exam_result_view_aklfjsdlfjsdlkf(request, pk):
+
+	if request.method == "GET":
+
+		exam = Exam.objects.get(pk=pk)
+		course_list = []
+		for x in exam.courses.all():
+			details = {}
+			details["name"] = x.name
+			details["pk"] = x.pk
+			course_list.append(details)
+		print(course_list)
+		
+		# result = []
+		# for key, model in groupby(Result.objects.filter(exam=exam), lambda x : x.student):
+		# 	print(key, model)
+
+		result = Result.objects.filter(exam=exam)\
+			.values("pk", "course__name", "student__pk", "course__pk", "student__account__username")\
+				.annotate(Sum("mark"))
+
+		print(result)
+		print("\n")
+		# print(create_student_set(result))
+
+		new_list = []
+		for x in create_student_set(result):
+			print(x)
+			print("\n")
+			new_list.append(check_course_list(course_list, x))
+			
+		# result_list = []
+		# for x in result:
+		# 	result_list.append(x)
+		# new_list = []
+		# for x in course_list:
+		# 	new_list.append(find_student(result_list, x))
+		
+		# print(result_list)
+		return Response(data=new_list)
+
+
+
+
+
+
+
+from Digital_School.utils import sql_select
+@api_view(['GET', ])
+@permission_classes((IsAuthenticated,))
 def exam_result_view(request, pk):
 
 	if request.method == "GET":
@@ -682,44 +732,44 @@ def exam_result_view(request, pk):
 
 
 
+		sub = ""
+		for item in course_list:
+			sub += f'sum(case when course_id = {str(item.get("pk", None))} then mark else 0 end) as {item.get("name", None)},'
 
+		abc = sql_select(
+			"""
+			with base_result as 
+			(
+				SELECT 
+					r.student_id, 
+					a.username as username, 
+					a.mobile,
+					r.course_id, 
+					c.name, 
+					r.mark  
+					FROM academic_result r 
+					JOIN account_account a 
+					on r.student_id = a.id 
+					JOIN academic_course c 
+					on r.course_id = c.id 
+					WHERE r.exam_id = {pk}
+			) 
+			SELECT student_id, username, mobile,
+			{sub}
+			sum(mark) as total,
+			dense_rank() over(order by sum(mark) desc) as position
+			from base_result group by student_id
+			""".format(
+				sub=sub,
+				pk = exam.pk
+			)
+		)
+		data = {}
+
+		data["exam_data"] = ExamListSerializer(exam).data
+		data["result"] = abc
 		
-		# result = []
-		# for key, model in groupby(Result.objects.filter(exam=exam), lambda x : x.student):
-		# 	print(key, model)
-
-		result = Result.objects.filter(exam=exam)\
-			.values("pk", "course__name", "student__pk", "course__pk", "student__account__username")\
-				.annotate(Sum("mark"))
-
-		
-		print(result)
-		print("\n")
-		# print(create_student_set(result))
-
-
-		new_list = []
-		for x in create_student_set(result):
-			print(x)
-
-			print("\n")
-
-			new_list.append(check_course_list(course_list, x))
-			
-
-
-		# result_list = []
-		# for x in result:
-		# 	result_list.append(x)
-
-		# new_list = []
-
-		# for x in course_list:
-		# 	new_list.append(find_student(result_list, x))
-			
-
-		# print(result_list)
-		return Response(data=new_list)
+		return Response(data=data)
 
 
 

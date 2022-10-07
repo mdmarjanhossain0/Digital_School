@@ -31,6 +31,7 @@ class NotificationSerializer(serializers.ModelSerializer) :
 
 	is_read                     = serializers.SerializerMethodField("get_is_read")
 	image 						= serializers.SerializerMethodField("get_image")
+	is_new 						= serializers.SerializerMethodField("get_is_new")
 
 	class Meta :
 		model = Notification
@@ -41,7 +42,8 @@ class NotificationSerializer(serializers.ModelSerializer) :
 			"image",
 			"created_at",
 			"updated_at",
-			"is_read"
+			"is_read",
+			"is_new"
 		]
 
 
@@ -57,6 +59,29 @@ class NotificationSerializer(serializers.ModelSerializer) :
 		else :
 
 
+			return True
+			# data = {}
+			# data["response"] = "Error"
+			# data["error_message"] = "Unauthenticated"
+			# raise ValidationError(data)
+
+
+
+
+
+	
+	def get_is_new(self, obj):
+		request = self.context.get("request", None)
+		if request :
+			user = request.user
+			if obj.calls.filter(pk=user.pk).exists():
+				return False
+			else :
+				# obj.reads.add(user.pk)
+				obj.calls.add(user.pk)
+				obj.save()
+				return True
+		else :
 			return True
 			# data = {}
 			# data["response"] = "Error"
