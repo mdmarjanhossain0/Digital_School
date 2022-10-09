@@ -90,7 +90,7 @@ WSGI_APPLICATION = 'Digital_School.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-if not DEBUG:
+if DEBUG:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -163,7 +163,7 @@ MEDIA_URL = '/media/'
 #     os.path.join(BASE_DIR, 'media'),
 # ]
 STATIC_ROOT=os.path.join(BASE_DIR,"static") 
-MEDIA_ROOT = os.path.join(BASE_DIR, '../tushers_care_media')
+MEDIA_ROOT = os.path.join(BASE_DIR, '../media')
 
 
 
