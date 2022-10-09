@@ -744,17 +744,21 @@ def exam_result_view(request, pk):
 					r.student_id, 
 					a.username as username, 
 					a.mobile,
+					s.hsc_group,
+					s.parent_mobile,
 					r.course_id, 
 					c.name, 
 					r.mark  
 					FROM academic_result r 
-					JOIN account_account a 
-					on r.student_id = a.id 
+					JOIN account_student s 
+					on r.student_id = s.id 
 					JOIN academic_course c 
 					on r.course_id = c.id 
+					JOIN account_account a 
+					ON s.account_id = a.id
 					WHERE r.exam_id = {pk}
 			) 
-			SELECT student_id, username, mobile,
+			SELECT student_id as 'Student Id', username as 'Name', mobile, hsc_group as 'HSC Group', parent_mobile as 'Parents Mobile',
 			{sub}
 			sum(mark) as total,
 			dense_rank() over(order by sum(mark) desc) as position
