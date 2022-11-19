@@ -341,6 +341,12 @@ def registration_staff_view(request):
 			return Response(data)
 
 
+
+		if not request.user.is_admin:
+			return Response(data={
+				"response": "error",
+				"error_message": "Only admin can create staff"
+			})
 		context = {}
 		organization = Organization.objects.get(account=request.user)
 		context["organization"] = organization
